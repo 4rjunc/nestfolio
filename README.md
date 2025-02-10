@@ -12,9 +12,7 @@
   - Features to use SPL Tokens
 
 - `update_organization_settings()`
-  - Modify governance parameters
-  - Update voting thresholds
-  - Change treasury rules
+  - Update voting thresholds (checks the voter's voting powers based on the NFT holdings or stake deposits)
   - Limit for proposals
 
 - `emergency_pause()`
@@ -27,6 +25,7 @@
   - Accept SOL/SPL tokens
   - Update treasury balance
   - Emit deposit events
+  - Anyone can call it and deposit tokens to an Organization , `nft_mint` will be called + voting power increases
 
 - `withdraw_funds()`
   - Multi-sig authorization
@@ -38,7 +37,6 @@
   - Process distributions
   - Update balances
 
-Do some research on cross-chain deposits
 
 ### Team Member 2: Proposal & Voting System
 #### 3. Proposal Management
@@ -52,10 +50,11 @@ Do some research on cross-chain deposits
 - `cast_vote()`
   - Record vote
   - Update vote counts
-  - Calculate voting power
+  - Calculate voting powers
+  - Rewards with a NFT to show on chain proof of voting
 
 - `delegate_vote()`
-  - Transfer voting rights
+  - Transfer voting rights (transfer the NFT )
   - Set delegation period
 
 - `revoke_delegation()`
@@ -74,13 +73,14 @@ Do some research on cross-chain deposits
   - Create member account
   - Set initial reputation
   - Assign roles
+  - Call NFT mint
 
-- `stake_tokens()`
+- `stake_tokens()` ?
   - Lock tokens
   - Calculate voting power
   - Set lock duration
 
-- `unstake_tokens()`
+- `unstake_tokens()` ? 
   - Process withdrawals
   - Apply penalties
   - Update status
@@ -91,10 +91,12 @@ Do some research on cross-chain deposits
   - Check permissions
   - Prevent duplicates
 
-- `implement_rate_limiting()`
-  - Control submission rates
-  - Prevent spam
-  - Dynamic thresholds
+#### 7. Utils Functions 
+- `nft_mint()`
+  - called during `cast_vote`/ `register_member`
+
+#### 8. Additional Features 
+- Do some research on cross-chain deposits : deposite ETH tokens on SOL
 
 ## Account Structures
 
@@ -104,8 +106,9 @@ pub struct Organization {
     pub name: String,
     pub treasury_balance: u64,
     pub total_members: u32,
-    pub governance_params: GovernanceParams,
     pub created_at: i64,
+    pub status: bool,
+    pub org_bump: u8,
 }
 
 #[account]
@@ -117,12 +120,14 @@ pub struct Proposal {
     pub down_votes: u32,
     pub status: ProposalStatus,
     pub expiry_time: i64,
+    pub organization: Pubkey,
+    pub proposal_bump: u8,
 }
 
 #[account]
 pub struct Member {
     pub address: Pubkey,
-    pub reputation: u32,
+    pub reputation: Pubkey[],
     pub staked_amount: u64,
     pub voting_power: u32,
     pub joined_at: i64,
