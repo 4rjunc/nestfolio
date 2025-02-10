@@ -108,6 +108,7 @@ pub struct Organization {
     pub total_members: u32,
     pub created_at: i64,
     pub status: bool,
+    pub proposal_limit: u32,
     pub org_bump: u8,
 }
 
