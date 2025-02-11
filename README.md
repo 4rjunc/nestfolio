@@ -2,6 +2,7 @@
 
 - [User Stories](https://docs.google.com/document/d/17RCmnB56av2gCFnuXC1-FK5gN8O0iw_5GI_I_45z0C4/edit?usp=sharing)
 - [LOI](https://docs.google.com/document/d/1ZQPu2TxbBhLUpNtphhLAHh3od6hKzoxPjCG04ynyfmo/edit?usp=sharing)
+- [Arch Diagrams](https://docs.google.com/document/d/187Y3Kyx5x9pkQKORfxurYicBLcGn-1ZUo9evkm4ep-4/edit?usp=sharing)
 
 
 ## Core Functions & Work Distribution
@@ -21,7 +22,6 @@
 
 - `emergency_pause()`
   - Halt all operations
-  - Requires multi-sig approval
   - Time-locked resumption
 
 #### 2. Treasury Operations
@@ -32,12 +32,12 @@
   - Anyone can call it and deposit tokens to an Organization , `nft_mint` will be called + voting power increases
 
 - `withdraw_funds()`
-  - Multi-sig authorization
   - Time-locked withdrawals
   - Transaction logging
 
 - `distribute_rewards()`
   - Calculate reward shares
+  - Multi-sig authorization
   - Process distributions
   - Update balances
 
@@ -89,17 +89,29 @@
   - Apply penalties
   - Update status
 
-#### 6. Security Features
-- `verify_transaction()`
-  - Validate signatures
-  - Check permissions
-  - Prevent duplicates
-
-#### 7. Utils Functions 
+#### 6. Utils Functions 
 - `nft_mint()`
   - called during `cast_vote`/ `register_member`
 
-#### 8. Additional Features 
+#### 7. AI agent  
+
+graph TD
+    A["AI Agent"]
+    B["Solana Anchor Smart Contract"]
+    C["Function 1: initialize_organization()"]
+    D["Function 2: create_proposal()"]
+    E["Solana Blockchain"]
+
+    A -->|"1. Calls"| C
+    A -->|"4. Calls"| D
+    C -->|"2. Initializes"| B
+    D -->|"5. Updates"| B
+    B -->|"3. Stores state"| E
+    B -->|"6. Updates state"| E
+    E -->|"7. Confirms transactions"| A
+
+
+#### 9. Additional Features 
 - Do some research on cross-chain deposits : deposite ETH tokens on SOL
 
 ## Account Structures
@@ -111,7 +123,7 @@ pub struct Organization {
     pub treasury_balance: u64,
     pub total_members: u32,
     pub created_at: i64,
-    pub status: bool,
+    pub status: OrganizationStatus,
     pub proposal_limit: u32,
     pub member_registration_fee: u64, // Fee required to join the organization (in lamports)
     pub minimum_deposit_amount: u64,  // Minimum deposit (stake) required to become a member (in lamports)
@@ -136,8 +148,24 @@ pub struct Member {
     pub address: Pubkey,
     pub reputation: Pubkey[],
     pub staked_amount: u64,
-    pub voting_power: u32,
+    pub voting_power: u32, // Its 1 if the member registers in DAO, 2 if member deposit the minimum_deposit_amount
     pub joined_at: i64,
+}
+```
+### Status Enums
+```rust
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Debug)]
+pub enum ProposalStatus {
+    Active,
+    Approved,
+    Rejected,
+    Canceled,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Debug)]
+pub enum OrganizationStatus {
+    Active,
+    InActive
 }
 ```
 
