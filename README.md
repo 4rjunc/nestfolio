@@ -1,5 +1,9 @@
 # Nestfolio - Technical Specification
 
+[User Stories](https://docs.google.com/document/d/17RCmnB56av2gCFnuXC1-FK5gN8O0iw_5GI_I_45z0C4/edit?usp=sharing)
+[LOI](https://docs.google.com/document/d/1ZQPu2TxbBhLUpNtphhLAHh3od6hKzoxPjCG04ynyfmo/edit?usp=sharing)
+
+
 ## Core Functions & Work Distribution
 
 ### Team Member 1: Core Infrastructure & Treasury
@@ -109,6 +113,8 @@ pub struct Organization {
     pub created_at: i64,
     pub status: bool,
     pub proposal_limit: u32,
+    pub member_registration_fee: u64, // Fee required to join the organization (in lamports)
+    pub minimum_deposit_amount: u64,  // Minimum deposit (stake) required to become a member (in lamports)
     pub org_bump: u8,
 }
 
