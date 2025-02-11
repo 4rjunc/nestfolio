@@ -7,7 +7,7 @@
 
 ## Core Functions & Work Distribution
 
-### Team Member 1: Core Infrastructure & Treasury
+### Team Member 1 [Avhi](https://github.com/AvhiMaz) : Core Infrastructure & Treasury
 #### 1. Organization Management
 - `initialize_organization()`
   - Create new DAO instance
@@ -36,13 +36,13 @@
   - Transaction logging
 
 - `distribute_rewards()`
-  - Calculate reward shares
+  - Calculate reward shares by number of up_votes and down_votes
   - Multi-sig authorization
   - Process distributions
   - Update balances
 
 
-### Team Member 2: Proposal & Voting System
+### Team Member 2 [Amal](https://github.com/amalkanhangad): Proposal & Voting System
 #### 3. Proposal Management
 - `create_proposal()`
   - Set proposal parameters
@@ -71,7 +71,7 @@
   - Generate vote analytics
   - Project outcomes
 
-### Team Member 3: Security & Member Management
+### Team Member 3 [Arjun](https://github.com/4rjunc): Member Management and AI
 #### 5. Member Operations
 - `register_member()`
   - Create member account
@@ -113,7 +113,7 @@ graph TD
 ```
 
 
-#### 9. Additional Features 
+#### 9. Expirimental/Additional Features 
 - Do some research on cross-chain deposits : deposite ETH tokens on SOL
 
 ## Account Structures
