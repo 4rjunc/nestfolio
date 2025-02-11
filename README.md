@@ -95,6 +95,7 @@
 
 #### 7. AI agent  
 
+```mermaid
 graph TD
     A["AI Agent"]
     B["Solana Anchor Smart Contract"]
@@ -109,6 +110,7 @@ graph TD
     B -->|"3. Stores state"| E
     B -->|"6. Updates state"| E
     E -->|"7. Confirms transactions"| A
+```
 
 
 #### 9. Additional Features 
@@ -242,3 +244,6 @@ pub enum OrganizationStatus {
    - AI governance
    - Automated proposals
    - Advanced treasury management
+
+
+
