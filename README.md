@@ -1,8 +1,7 @@
 # Nestfolio - Technical Specification
 
-- [User Stories](https://docs.google.com/document/d/17RCmnB56av2gCFnuXC1-FK5gN8O0iw_5GI_I_45z0C4/edit?usp=sharing)
-- [LOI](https://docs.google.com/document/d/1ZQPu2TxbBhLUpNtphhLAHh3od6hKzoxPjCG04ynyfmo/edit?usp=sharing)
-
+- [LOI](https://docs.google.com/document/d/1eqb1L-k3_BGJH78C4hm93Ho8nJ6oOwfgNqNfH212U6M/edit?usp=sharing)
+- [User Stories](https://docs.google.com/document/d/1ZQPu2TxbBhLUpNtphhLAHh3od6hKzoxPjCG04ynyfmo/edit?usp=sharing)
 
 ## Core Functions & Work Distribution
 
