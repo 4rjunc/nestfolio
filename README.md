@@ -99,17 +99,17 @@
 graph TD
     A["AI Agent"]
     B["Solana Anchor Smart Contract"]
-    C["Function 1: initialize_organization()"]
-    D["Function 2: create_proposal()"]
+    C["initialize_organization()"]
+    D["create_proposal()"]
     E["Solana Blockchain"]
 
-    A -->|"1. Calls"| C
-    A -->|"4. Calls"| D
-    C -->|"2. Initializes"| B
-    D -->|"5. Updates"| B
-    B -->|"3. Stores state"| E
-    B -->|"6. Updates state"| E
-    E -->|"7. Confirms transactions"| A
+    A --> C
+    A --> D
+    C --> B
+    D --> B
+    B --> E
+    B --> E
+    E --> A
 ```
 
 
