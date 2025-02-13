@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 
 #[account]
+#[derive(InitSpace)]
 pub struct Organisation {
+    #[max_len(20)]
     pub name: String,
     pub treasury_balance: u64,
     pub total_members: u32,

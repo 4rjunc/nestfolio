@@ -1,8 +1,9 @@
+#![allow(unexpected_cfgs)]
 use anchor_lang::prelude::*;
 
 mod states;
 mod instructions;
-
+use crate::instructions::*;
 
 declare_id!("FXvTKSj5SXeRvaKqGxVc97pekvqN77btHBoZ4Qsn9iZX");
 
@@ -10,11 +11,12 @@ declare_id!("FXvTKSj5SXeRvaKqGxVc97pekvqN77btHBoZ4Qsn9iZX");
 pub mod nestfolio {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
+    pub fn initialize_organization(
+        ctx: Context<InitializeOrganization>,
+        name: String,
+        fee: u64
+    ) -> Result<()> {
+        ctx.accounts.initialize_organization(name, fee, &ctx.bumps)?;
         Ok(())
     }
 }
-
-#[derive(Accounts)]
-pub struct Initialize {}
