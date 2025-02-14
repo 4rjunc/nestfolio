@@ -18,4 +18,15 @@ impl<'info> UpdateOrganisationSettings<'info> {
 
         Ok(())
     }
+
+    pub fn emergency_pause(&mut self, unlock_time: i64) -> Result<()> {
+        self.organisation.paused = true;
+        self.organisation.unlock_timestamp = unlock_time;
+        Ok(())
+    }
+
+    pub fn resume_operations(&mut self) -> Result<()> {
+        self.organisation.paused = false;
+        Ok(())
+    }
 }
