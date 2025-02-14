@@ -28,4 +28,17 @@ pub mod nestfolio {
         ctx.accounts.update_organisation(voting_threshold, proposal_limit)?;
         Ok(())
     }
+
+    pub fn emergency_pause(
+        ctx: Context<UpdateOrganisationSettings>,
+        unlock_time: i64
+    ) -> Result<()> {
+        ctx.accounts.emergency_pause(unlock_time)?;
+        Ok(())
+    }
+
+    pub fn resume_operations(ctx: Context<UpdateOrganisationSettings>) -> Result<()> {
+        ctx.accounts.resume_operations()?;
+        Ok(())
+    }
 }
