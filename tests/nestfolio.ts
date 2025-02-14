@@ -4,7 +4,6 @@ import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
-import { ProgramTestContext } from "solana-bankrun";
 
 const IDL = require("../target/idl/nestfolio.json");
 
@@ -70,5 +69,28 @@ describe("DAO Initialization", () => {
     console.log(dao);
     expect(dao.treasuryBalance.toString()).to.equal("0");
     expect(dao.proposalLimit).to.equal(20);
+  });
+
+  it("emergency pause", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const pauseTimestamp = Math.floor(Date.now() / 1000) + 3600;
+
+    await daoProgram.methods
+      .emergencyPause(new anchor.BN(pauseTimestamp))
+      .accounts({
+        organisation: daoAddress,
+      })
+      .rpc();
+
+    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+
+    console.log(dao);
+
+    expect(dao.paused).to.be.true;
+    expect(dao.unlockTimestamp.toString()).to.equal(pauseTimestamp.toString());
   });
 });
