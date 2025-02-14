@@ -19,4 +19,13 @@ pub mod nestfolio {
         ctx.accounts.initialize_organization(name, fee, &ctx.bumps)?;
         Ok(())
     }
+
+    pub fn update_organisation(
+        ctx: Context<UpdateOrganisationSettings>,
+        voting_threshold: u64,
+        proposal_limit: u32
+    ) -> Result<()> {
+        ctx.accounts.update_organisation(voting_threshold, proposal_limit)?;
+        Ok(())
+    }
 }
