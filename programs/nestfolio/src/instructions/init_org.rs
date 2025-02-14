@@ -26,6 +26,7 @@ impl<'info> InitializeOrganization<'info> {
         bumps: &InitializeOrganizationBumps
     ) -> Result<()> {
         self.organisation.set_inner(Organisation {
+            admin: self.creator.key().clone(),
             name,
             treasury_balance: 0,
             total_members: 0,
@@ -35,6 +36,9 @@ impl<'info> InitializeOrganization<'info> {
             member_registration_fee: fee,
             minimum_deposit_amount: 1000,
             org_bump: bumps.organisation,
+            voting_threshold: 5000000000,
+            paused: false,
+            unlock_timestamp: 0,
         });
         Ok(())
     }
