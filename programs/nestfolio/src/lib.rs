@@ -41,4 +41,9 @@ pub mod nestfolio {
         ctx.accounts.resume_operations()?;
         Ok(())
     }
+
+    pub fn deposit_fund(ctx: Context<DepositFund>, amount: u64) -> Result<()> {
+        ctx.accounts.deposit_fund(amount)?;
+        Ok(())
+    }
 }
