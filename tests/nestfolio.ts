@@ -93,4 +93,23 @@ describe("DAO Initialization", () => {
     expect(dao.paused).to.be.true;
     expect(dao.unlockTimestamp.toString()).to.equal(pauseTimestamp.toString());
   });
+
+  it("resume DAO operations", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    await daoProgram.methods
+      .resumeOperations()
+      .accounts({
+        organisation: daoAddress,
+      })
+      .rpc();
+
+    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+
+    console.log(dao);
+    expect(dao.paused).to.be.false;
+  });
 });
