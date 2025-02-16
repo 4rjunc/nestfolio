@@ -1,7 +1,7 @@
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
 
@@ -16,6 +16,7 @@ describe("DAO Initialization", () => {
   let provider;
   let daoProgram;
   let creator;
+  let member;
 
   before(async () => {
     context = await startAnchor(
@@ -26,6 +27,7 @@ describe("DAO Initialization", () => {
     provider = new BankrunProvider(context);
     daoProgram = new Program<Nestfolio>(IDL, provider);
     creator = provider.wallet.publicKey;
+    member = new Keypair().publicKey;
   });
 
   it("Initialize a DAO", async () => {
@@ -111,5 +113,31 @@ describe("DAO Initialization", () => {
 
     console.log(dao);
     expect(dao.paused).to.be.false;
+  });
+
+  it("deposit funds", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const [treasuryAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    await daoProgram.methods
+      .depositFund(new anchor.BN(1000000))
+      .accounts({
+        organisation: daoAddress,
+        treasury: treasuryAddress,
+        signer: member.publicKey,
+      })
+      .signers(member instanceof anchor.web3.Keypair ? [member] : [])
+      .rpc();
+
+    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+
+    console.log(dao);
   });
 });
