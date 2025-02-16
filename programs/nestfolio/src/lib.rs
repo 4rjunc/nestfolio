@@ -46,4 +46,9 @@ pub mod nestfolio {
         ctx.accounts.deposit_fund(amount)?;
         Ok(())
     }
+
+    pub fn withdraw_fund(ctx: Context<WithdrawFund>, amount: u64) -> Result<()> {
+        ctx.accounts.withdraw_fund(amount)?;
+        Ok(())
+    }
 }
