@@ -140,4 +140,29 @@ describe("DAO Initialization", () => {
 
     console.log(dao);
   });
+
+  it("withdraw funds", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const [treasuryAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    await daoProgram.methods
+      .withdrawFund(new anchor.BN(1000000))
+      .accounts({
+        organization: daoAddress,
+        treasury: treasuryAddress,
+        signer: member.PublicKey,
+      })
+      .signer[member].rpc();
+
+    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+
+    console.log(dao);
+  });
 });
