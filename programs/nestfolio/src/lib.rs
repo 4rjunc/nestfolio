@@ -21,13 +21,8 @@ pub mod nestfolio {
         Ok(())
     }
 
-    pub fn initialize_member(
-        ctx: Context<InitializeMember>,
-        name: String,
-        org_address: Pubkey,
-    ) -> Result<()> {
-        ctx.accounts
-            .initialize_member(name, org_address, &ctx.bumps)?;
+    pub fn initialize_member(ctx: Context<InitializeMember>, name: String) -> Result<()> {
+        ctx.accounts.initialize_member(name, &ctx.bumps)?;
         Ok(())
     }
 
