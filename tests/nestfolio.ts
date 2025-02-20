@@ -140,4 +140,19 @@ describe("DAO Initialization", () => {
 
     console.log(dao);
   });
+
+  it("Register Member", async () => {
+    const [memberAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("member"), member.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+    console.log("member", memberAddress)
+    await daoProgram.methods
+      .initializeMember("Avhi", new PublicKey("EbN3JqZ2EKGGVagmvQpUuUPopEMDaXq4yXbLNqhaXEZD"))
+      .rpc();
+
+    const member_data = await daoProgram.account.member.fetchNullable(memberAddress);
+    console.log(member_data);
+  });
+
 });
