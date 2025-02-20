@@ -28,6 +28,7 @@ describe("DAO Initialization", () => {
     daoProgram = new Program<Nestfolio>(IDL, provider);
     creator = provider.wallet.publicKey;
     member = new Keypair().publicKey;
+
   });
 
   it("Initialize a DAO", async () => {
@@ -140,4 +141,28 @@ describe("DAO Initialization", () => {
 
     console.log(dao);
   });
+
+  it("Register Member", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const [memberAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("member"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    console.log("member", memberAddress)
+    await daoProgram.methods
+      .initializeMember("Avhi")
+      .accounts({
+        organization: daoAddress
+      })
+      .rpc();
+
+    const member_data = await daoProgram.account.member.fetchNullable(memberAddress);
+    console.log(member_data);
+  });
+
 });
