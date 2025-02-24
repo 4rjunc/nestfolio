@@ -5,6 +5,8 @@ mod instructions;
 mod states;
 use crate::instructions::*;
 
+mod error;
+
 declare_id!("FXvTKSj5SXeRvaKqGxVc97pekvqN77btHBoZ4Qsn9iZX");
 
 #[program]
@@ -66,6 +68,10 @@ pub mod nestfolio {
     ) -> Result<()> {
         ctx.accounts
             .create_proposal(title, description, expiry_time, ctx.bumps.proposal)?;
+        Ok(())
+    }
+    pub fn vote_on_proposal(ctx: Context<VoteOnProposal>, vote: bool) -> Result<()> {
+        ctx.accounts.vote_on_proposal(vote)?;
         Ok(())
     }
 }
