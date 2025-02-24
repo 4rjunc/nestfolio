@@ -49,5 +49,7 @@ impl <'info> CreateProposal<'info> {
 
         Ok(())
     }
+
+   
     
 }
