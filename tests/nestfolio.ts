@@ -4,6 +4,7 @@ import { Program } from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
+import { proposer } from "@onflow/fcl";
 
 const IDL = require("../target/idl/nestfolio.json");
 
@@ -28,7 +29,6 @@ describe("DAO Initialization", () => {
     daoProgram = new Program<Nestfolio>(IDL, provider);
     creator = provider.wallet.publicKey;
     member = new Keypair().publicKey;
-
   });
 
   it("Initialize a DAO", async () => {
@@ -153,16 +153,49 @@ describe("DAO Initialization", () => {
       DAO_PROGRAM_ID
     );
 
-    console.log("member", memberAddress)
+    console.log("member", memberAddress);
     await daoProgram.methods
       .initializeMember("Avhi")
       .accounts({
-        organization: daoAddress
+        organization: daoAddress,
       })
       .rpc();
 
-    const member_data = await daoProgram.account.member.fetchNullable(memberAddress);
+    const member_data = await daoProgram.account.member.fetchNullable(
+      memberAddress
+    );
     console.log(member_data);
   });
+  it("Create Proposal", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+    const [proposalAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("proposal"),
+        creator.toBuffer(),
+        daoAddress.toBuffer(),
+        Buffer.from("Buy a new laptop"),
+      ],
+      DAO_PROGRAM_ID
+    );
 
+    await daoProgram.methods
+      .createProposal(
+        "Buy a new laptop",
+        "Buy a new laptop for the organization",
+        new anchor.BN(1000000),
+      )
+      .accounts({
+        proposer: creator,
+        organization: daoAddress,
+        proposal: proposalAddress,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
+    console.log("Proposal created successfully:", proposal);
+  });
 });
