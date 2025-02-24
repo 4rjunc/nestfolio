@@ -4,7 +4,6 @@ import { Program } from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
-import { proposer } from "@onflow/fcl";
 
 const IDL = require("../target/idl/nestfolio.json");
 
@@ -18,6 +17,7 @@ describe("DAO Initialization", () => {
   let daoProgram;
   let creator;
   let member;
+  let voter = new Keypair();
 
   before(async () => {
     context = await startAnchor(
@@ -185,7 +185,7 @@ describe("DAO Initialization", () => {
       .createProposal(
         "Buy a new laptop",
         "Buy a new laptop for the organization",
-        new anchor.BN(1000000),
+        new anchor.BN(1821246480)
       )
       .accounts({
         proposer: creator,
@@ -197,5 +197,35 @@ describe("DAO Initialization", () => {
 
     const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
     console.log("Proposal created successfully:", proposal);
+  });
+
+  it("Vote on Proposal", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const [proposalAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("proposal"),
+        creator.toBuffer(),
+        daoAddress.toBuffer(),
+        Buffer.from("Buy a new laptop"),
+      ],
+      DAO_PROGRAM_ID
+    );
+
+    await daoProgram.methods
+      .voteOnProposal(true)
+      .accounts({
+        voter: voter.publicKey,
+        proposal: proposalAddress,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([voter])
+      .rpc();
+
+    const vote = await daoProgram.account.proposal.fetch(proposalAddress);
+    console.log("Proposal voted successfully:", vote);
   });
 });
