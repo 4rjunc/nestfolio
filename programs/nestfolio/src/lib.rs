@@ -58,4 +58,14 @@ pub mod nestfolio {
         ctx.accounts.withdraw_fund(amount)?;
         Ok(())
     }
+    pub fn create_proposal(
+        ctx: Context<CreateProposal>,
+        title: String,
+        description: String,
+        expiry_time: i64,
+    ) -> Result<()> {
+        ctx.accounts
+            .create_proposal(title, description, expiry_time, ctx.bumps.proposal)?;
+        Ok(())
+    }
 }
