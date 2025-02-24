@@ -17,6 +17,7 @@ describe("DAO Initialization", () => {
   let daoProgram;
   let creator;
   let member;
+  let voter = new Keypair();
 
   before(async () => {
     context = await startAnchor(
@@ -164,5 +165,92 @@ describe("DAO Initialization", () => {
     const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
 
     console.log(dao);
+  });
+
+  it("Register Member", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const [memberAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("member"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    console.log("member", memberAddress);
+    await daoProgram.methods
+      .initializeMember("Avhi")
+      .accounts({
+        organization: daoAddress,
+      })
+      .rpc();
+
+    const member_data = await daoProgram.account.member.fetchNullable(
+      memberAddress
+    );
+    console.log(member_data);
+  });
+  it("Create Proposal", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+    const [proposalAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("proposal"),
+        creator.toBuffer(),
+        daoAddress.toBuffer(),
+        Buffer.from("Buy a new laptop"),
+      ],
+      DAO_PROGRAM_ID
+    );
+
+    await daoProgram.methods
+      .createProposal(
+        "Buy a new laptop",
+        "Buy a new laptop for the organization",
+        new anchor.BN(1821246480)
+      )
+      .accounts({
+        proposer: creator,
+        organization: daoAddress,
+        proposal: proposalAddress,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+    const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
+    console.log("Proposal created successfully:", proposal);
+  });
+
+  it("Vote on Proposal", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const [proposalAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("proposal"),
+        creator.toBuffer(),
+        daoAddress.toBuffer(),
+        Buffer.from("Buy a new laptop"),
+      ],
+      DAO_PROGRAM_ID
+    );
+
+    await daoProgram.methods
+      .voteOnProposal(true)
+      .accounts({
+        voter: voter.publicKey,
+        proposal: proposalAddress,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([voter])
+      .rpc();
+
+    const vote = await daoProgram.account.proposal.fetch(proposalAddress);
+    console.log("Proposal voted successfully:", vote);
   });
 });
