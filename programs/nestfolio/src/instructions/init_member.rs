@@ -31,6 +31,8 @@ impl<'info> InitializeMember<'info> {
             voting_power: 1,
             joined_at: Clock::get()?.unix_timestamp,
             member_bump: bumps.member,
+            delegate: None,
+            is_active: true,
         });
 
         Ok(())

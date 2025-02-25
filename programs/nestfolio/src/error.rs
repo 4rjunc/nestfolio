@@ -70,4 +70,16 @@ pub enum NestfolioError {
 
     #[msg("VotingNotAllowed: The user is not allowed to vote on this proposal.")]
     VotingNotAllowed,
+
+    #[msg("MemberNotActive: The user is not active.")]
+    MemberNotActive,
+
+    #[msg("Cannot delegate vote to self.")]
+    CannotDelegateToSelf,
+
+    #[msg("Vote has already been delegated.")]
+    AlreadyDelegated,
+
+    #[msg("Member does not belong to this organization.")]
+    InvalidOrganization,
 }

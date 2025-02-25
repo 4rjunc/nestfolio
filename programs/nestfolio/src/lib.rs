@@ -74,4 +74,9 @@ pub mod nestfolio {
         ctx.accounts.vote_on_proposal(vote)?;
         Ok(())
     }
+
+    pub fn delegate_vote(ctx: Context<DelegateVote>) -> Result<()> {
+        ctx.accounts.delegate_vote()?;
+        Ok(())
+    }
 }
