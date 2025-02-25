@@ -236,11 +236,23 @@ describe("DAO Initialization", () => {
       DAO_PROGRAM_ID
     );
 
+    const [proposalNftMint] = PublicKey.findProgramAddressSync(
+      [Buffer.from("proposal"), proposalAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const proposalNftTokenAccount = await getAssociatedTokenAddress(
+      proposalNftMint,
+      voter.publicKey
+    );
+
     await daoProgram.methods
       .voteOnProposal(true)
       .accounts({
         voter: voter.publicKey,
         proposal: proposalAddress,
+        proposalNftMint,
+        proposalNftTokenAccount,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([voter])
@@ -248,5 +260,12 @@ describe("DAO Initialization", () => {
 
     const vote = await daoProgram.account.proposal.fetch(proposalAddress);
     console.log("Proposal voted successfully:", vote);
+
+    const tokenAccount = await getAccount(
+      provider.connection,
+      proposalNftTokenAccount
+    );
+    expect(tokenAccount.amount.toString()).to.equal("1");
+    console.log("NFT Minted Successfully!");
   });
 });
