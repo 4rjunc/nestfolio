@@ -4,6 +4,7 @@ import { Program } from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
+import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 
 const IDL = require("../target/idl/nestfolio.json");
 
@@ -153,11 +154,24 @@ describe("DAO Initialization", () => {
       DAO_PROGRAM_ID
     );
 
+    const [memberNftMint] = PublicKey.findProgramAddressSync(
+      [Buffer.from("member_nft"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const memberNftTokenAccount = await getAssociatedTokenAddress(
+      memberNftMint,
+      creator
+    );
+
     console.log("member", memberAddress);
     await daoProgram.methods
       .initializeMember("Avhi")
       .accounts({
         organization: daoAddress,
+        member: memberAddress,
+        memberNftMint,
+        memberNftTokenAccount,
       })
       .rpc();
 
@@ -165,6 +179,13 @@ describe("DAO Initialization", () => {
       memberAddress
     );
     console.log(member_data);
+
+    const tokenAccount = await getAccount(
+      provider.connection,
+      memberNftTokenAccount
+    );
+    expect(tokenAccount.amount.toString()).to.equal("1");
+    console.log("NFT Minted Successfully!");
   });
   it("Create Proposal", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
