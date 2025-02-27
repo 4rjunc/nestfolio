@@ -39,6 +39,7 @@ impl<'info> InitializeOrganization<'info> {
             voting_threshold: 5000000000,
             paused: false,
             unlock_timestamp: 0,
+            proposal_list: vec![],
         });
         Ok(())
     }

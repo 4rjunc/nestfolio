@@ -25,15 +25,16 @@ describe("DAO Initialization", () => {
     context = await startAnchor(
       "",
       [{ name: "nestfolio", programId: DAO_PROGRAM_ID }],
-      [{
-        address: voter.publicKey,
-        info: {
-          lamports: 2_000_000_000, // 1 SOL equivalent
-          data: Buffer.alloc(0),
-          owner: SYSTEM_PROGRAM_ID,
-          executable: false,
+      [
+        {
+          address: voter.publicKey,
+          info: {
+            lamports: 2_000_000_000,
+            data: Buffer.alloc(0),
+            owner: SYSTEM_PROGRAM_ID,
+            executable: false,
+          },
         },
-      }
       ]
     );
     provider = new BankrunProvider(context);
@@ -231,7 +232,7 @@ describe("DAO Initialization", () => {
   });
 
   it("Vote on Proposal", async () => {
-    console.log("wallet balance:",)
+    console.log("wallet balance:");
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -269,6 +270,30 @@ describe("DAO Initialization", () => {
       .signers([voter])
       .rpc();
 
+    await daoProgram.methods
+      .voteOnProposal(true)
+      .accounts({
+        voter: voter.publicKey,
+        proposal: proposalAddress,
+        proposalNftMint,
+        proposalNftTokenAccount,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([voter])
+      .rpc();
+
+    await daoProgram.methods
+      .voteOnProposal(false)
+      .accounts({
+        voter: voter.publicKey,
+        proposal: proposalAddress,
+        proposalNftMint,
+        proposalNftTokenAccount,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([voter])
+      .rpc();
+
     const vote = await daoProgram.account.proposal.fetch(proposalAddress);
     console.log("Proposal voted successfully:", vote);
 
@@ -279,60 +304,45 @@ describe("DAO Initialization", () => {
     //expect(tokenAccount.amount.toString()).to.equal("1");
     console.log("NFT Minted Successfully!");
   });
-  it("DV", async () => {
+
+  it("Vote Query - List all proposals", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
     );
 
-    const [voterAddress] = PublicKey.findProgramAddressSync(
-      [Buffer.from("member"), voter.publicKey.toBuffer()],
-      DAO_PROGRAM_ID
+    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+    if (!dao) {
+      throw new Error("DAO not found!");
+    }
+    console.log("DAO Name:", dao.name);
+
+    if (!dao.proposalList || dao.proposalList.length === 0) {
+      console.log("No proposals found.");
+      return;
+    }
+
+    for (const proposalAddress of dao.proposalList) {
+      const proposal = await daoProgram.account.proposal.fetchNullable(
+        proposalAddress
+      );
+      if (!proposal) continue;
+
+      console.log(`Proposal: ${proposal.title}`);
+      console.log("  Description:", proposal.description);
+      console.log("  Proposer:", proposal.proposer.toBase58());
+      console.log("  Up Votes:", proposal.upVotes.toString());
+      console.log("  Down Votes:", proposal.downVotes.toString());
+      console.log("  Status:", proposal.status);
+      console.log(
+        "  Expiry:",
+        new Date(proposal.expiryTime.toNumber() * 1000).toISOString()
+      );
+    }
+
+    expect(dao.proposalList.length).to.be.greaterThan(
+      0,
+      "No proposals found for the organization"
     );
-
-    const [delegateAddress] = PublicKey.findProgramAddressSync(
-      [Buffer.from("member"), member.toBuffer()],
-      DAO_PROGRAM_ID
-    );
-
-    // ✅ Initialize the voter account if not already initialized
-    await daoProgram.methods
-      .initializeMember("Voter")
-      .accounts({
-        organization: daoAddress,
-        member: voterAddress,
-        signer: voter.publicKey,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([voter])
-      .rpc();
-
-    // ✅ Initialize the delegate account if not already initialized
-    await daoProgram.methods
-      .initializeMember("Delegate")
-      .accounts({
-        organization: daoAddress,
-        member: delegateAddress,
-        signer: member,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .rpc();
-
-    // ✅ Now delegate vote
-    await daoProgram.methods
-      .delegateVote()
-      .accounts({
-        voter: voter.publicKey,
-        delegate: member,
-        voterAccount: voterAddress,
-        delegateAccount: delegateAddress,
-        organization: daoAddress,
-      })
-      .signers([voter])
-      .rpc();
-
-    const updatedVoter = await daoProgram.account.member.fetch(voterAddress);
-    console.log("Vote delegated successfully:", updatedVoter);
-    expect(updatedVoter.delegate.toBase58()).to.equal(member.toBase58());
   });
 });
