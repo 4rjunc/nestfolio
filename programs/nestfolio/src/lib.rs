@@ -74,4 +74,15 @@ pub mod nestfolio {
         ctx.accounts.vote_on_proposal(vote)?;
         Ok(())
     }
+
+    pub fn list_proposal(
+        ctx: Context<ListProposal>,
+        title: String,
+        description: String,
+        expiry_time: i64,
+    ) -> Result<()> {
+        ctx.accounts
+            .list_proposal(title, description, expiry_time)?;
+        Ok(())
+    }
 }

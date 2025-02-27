@@ -10,4 +10,6 @@ pub struct Member {
     pub voting_power: u32,
     pub joined_at: i64,
     pub member_bump: u8,
+    pub delegate: Option<Pubkey>,
+    pub is_active: bool,
 }
