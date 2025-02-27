@@ -23,6 +23,9 @@ pub struct CreateProposal<'info> {
         1,   
     )]
     pub proposal: Account<'info, Proposal>,
+    #[account(
+        mut,
+    )]
     pub organization: Account<'info, Organisation>,
     pub system_program: Program<'info, System>,
 }
@@ -46,6 +49,8 @@ impl <'info> CreateProposal<'info> {
             organization: self.organization.key().clone(),
             proposal_bump,
         });
+
+        self.organization.proposal_list.push(self.proposal.key());
 
         Ok(())
     }
