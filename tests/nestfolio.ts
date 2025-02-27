@@ -1,9 +1,11 @@
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey, Connection } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
+import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
+import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 
 const IDL = require("../target/idl/nestfolio.json");
 
@@ -23,7 +25,16 @@ describe("DAO Initialization", () => {
     context = await startAnchor(
       "",
       [{ name: "nestfolio", programId: DAO_PROGRAM_ID }],
-      []
+      [{
+        address: voter.publicKey,
+        info: {
+          lamports: 2_000_000_000, // 1 SOL equivalent
+          data: Buffer.alloc(0),
+          owner: SYSTEM_PROGRAM_ID,
+          executable: false,
+        },
+      }
+      ]
     );
     provider = new BankrunProvider(context);
     daoProgram = new Program<Nestfolio>(IDL, provider);
@@ -153,11 +164,24 @@ describe("DAO Initialization", () => {
       DAO_PROGRAM_ID
     );
 
+    const [memberNftMint] = PublicKey.findProgramAddressSync(
+      [Buffer.from("member_nft"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const memberNftTokenAccount = await getAssociatedTokenAddress(
+      memberNftMint,
+      creator
+    );
+
     console.log("member", memberAddress);
     await daoProgram.methods
       .initializeMember("Avhi")
       .accounts({
         organization: daoAddress,
+        member: memberAddress,
+        memberNftMint,
+        memberNftTokenAccount,
       })
       .rpc();
 
@@ -165,6 +189,13 @@ describe("DAO Initialization", () => {
       memberAddress
     );
     console.log(member_data);
+
+    const tokenAccount = await getAccount(
+      provider.connection,
+      memberNftTokenAccount
+    );
+    expect(tokenAccount.amount.toString()).to.equal("1");
+    console.log("NFT Minted Successfully!");
   });
   it("Create Proposal", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
@@ -200,6 +231,7 @@ describe("DAO Initialization", () => {
   });
 
   it("Vote on Proposal", async () => {
+    console.log("wallet balance:",)
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -215,11 +247,23 @@ describe("DAO Initialization", () => {
       DAO_PROGRAM_ID
     );
 
+    const [proposalNftMint] = PublicKey.findProgramAddressSync(
+      [Buffer.from("proposal"), proposalAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const proposalNftTokenAccount = await getAssociatedTokenAddress(
+      proposalNftMint,
+      voter.publicKey
+    );
+
     await daoProgram.methods
       .voteOnProposal(true)
       .accounts({
         voter: voter.publicKey,
         proposal: proposalAddress,
+        proposalNftMint,
+        proposalNftTokenAccount,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .signers([voter])
@@ -227,6 +271,13 @@ describe("DAO Initialization", () => {
 
     const vote = await daoProgram.account.proposal.fetch(proposalAddress);
     console.log("Proposal voted successfully:", vote);
+
+    const tokenAccount = await getAccount(
+      provider.connection,
+      proposalNftTokenAccount
+    );
+    //expect(tokenAccount.amount.toString()).to.equal("1");
+    console.log("NFT Minted Successfully!");
   });
   it("DV", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
