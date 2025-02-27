@@ -1,7 +1,7 @@
 {
     "name": "spanish_trump",
    "clients": [],
-    "modelProvider": "grok",
+    "modelProvider": "openrouter",
     "settings": {
         "secrets": {},
         "voice": {
@@ -106,7 +106,7 @@
             }
         ],
         [
- 
+
             {
                "user": "{{user1}}",
                "content": {
@@ -165,7 +165,7 @@
             }
         ],
         [
-            
+
             {
                  "user": "{{user1}}",
                  "content": {

@@ -53,6 +53,7 @@ export async function getWalletKey(
         try {
             // First try base58
             const secretKey = bs58.decode(privateKeyString);
+            console.log("\n\nSOLANA PRIVATE KEY: ", secretKey, "\n\n")
             return { keypair: Keypair.fromSecretKey(secretKey) };
         } catch (e) {
             elizaLogger.log("Error decoding base58 private key:", e);

@@ -15,7 +15,7 @@ const PROVIDER_CONFIG = {
     BIRDEYE_API: "https://public-api.birdeye.so",
     MAX_RETRIES: 3,
     RETRY_DELAY: 2000,
-    DEFAULT_RPC: "https://api.mainnet-beta.solana.com",
+    DEFAULT_RPC: "https://api.devnet.solana.com",
     GRAPHQL_ENDPOINT: "https://graph.codex.io/graphql",
     TOKEN_ADDRESSES: {
         SOL: "So11111111111111111111111111111111111111112",
@@ -334,8 +334,8 @@ export class WalletProvider {
                         token === SOL
                             ? "solana"
                             : token === BTC
-                              ? "bitcoin"
-                              : "ethereum"
+                                ? "bitcoin"
+                                : "ethereum"
                     ].usd = price;
                 } else {
                     elizaLogger.warn(
@@ -433,7 +433,7 @@ const walletProvider: Provider = {
 
             const connection = new Connection(
                 runtime.getSetting("SOLANA_RPC_URL") ||
-                    PROVIDER_CONFIG.DEFAULT_RPC
+                PROVIDER_CONFIG.DEFAULT_RPC
             );
 
             const provider = new WalletProvider(connection, publicKey);
