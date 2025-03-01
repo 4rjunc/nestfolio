@@ -1,0 +1,66 @@
+
+
+> @elizaos/plugin-injective@0.25.6-alpha.1 build /Users/arjunc/Documents/solana/nestfolio/nestfolio_AIagent/packages/plugin-injective
+> tsup --format esm --dts
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.3.5
+[34mCLI[39m Using tsup config: /Users/arjunc/Documents/solana/nestfolio/nestfolio_AIagent/packages/plugin-injective/tsup.config.ts
+[34mCLI[39m Target: node23
+[34mCLI[39m Cleaning output folder
+[34mESM[39m Build start
+DTS Build start
+
+[90m[[90m10:31:59 AM[90m][39m [43m[30m WARN [39m[49m [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe value for "sideEffects" must be a boolean or an array[0m [package.json]
+
+    ../../node_modules/@injectivelabs/abacus-proto-ts/package.json:5:17:
+[37m      5 │   "sideEffects": [32m[37m"false",
+        ╵                  [32m^[0m
+
+
+
+
+[90m[[90m10:31:59 AM[90m][39m [43m[30m WARN [39m[49m [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe value for "sideEffects" must be a boolean or an array[0m [package.json]
+
+    ../../node_modules/@injectivelabs/mito-proto-ts/package.json:5:17:
+[37m      5 │   "sideEffects": [32m[37m"false",
+        ╵                  [32m^[0m
+
+
+
+
+[90m[[90m10:31:59 AM[90m][39m [43m[30m WARN [39m[49m [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe value for "sideEffects" must be a boolean or an array[0m [package.json]
+
+    ../../node_modules/@injectivelabs/olp-proto-ts/package.json:5:17:
+[37m      5 │   "sideEffects": [32m[37m"false",
+        ╵                  [32m^[0m
+
+
+
+
+[90m[[90m10:31:59 AM[90m][39m [43m[30m WARN [39m[49m [33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mThe condition "types" here will never be used as it comes after both "import" and "require"[0m [package.json]
+
+    injective-sdk-client-ts/package.json:18:6:
+[37m      18 │       [32m"types"[37m: "./dist/index.d.ts"
+         ╵       [32m~~~~~~~[0m
+
+  The "import" condition comes earlier and will be used for all "import" statements:
+
+    injective-sdk-client-ts/package.json:17:6:
+[37m      17 │       [32m"import"[37m: "./dist/index.js",
+         ╵       [32m~~~~~~~~[0m
+
+  The "require" condition comes earlier and will be used for all "require" calls:
+
+    injective-sdk-client-ts/package.json:16:6:
+[37m      16 │       [32m"require"[37m: "./dist/index.cjs",
+         ╵       [32m~~~~~~~~~[0m
+
+
+
+[32mESM[39m [1mdist/index.js     [22m[32m8.26 MB[39m
+[32mESM[39m [1mdist/index.js.map [22m[32m17.49 MB[39m
+[32mESM[39m ⚡️ Build success in 3550ms
+DTS ⚡️ Build success in 17365ms
+DTS dist/index.d.ts 137.00 B
