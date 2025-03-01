@@ -1,7 +1,7 @@
 import { Bot } from "grammy";
 import 'dotenv/config'
 import { initDAO } from './program.js'; 
-import { analyzeDAOInit } from "./prompt.js"
+import { analyzeDAOInit, emergencyPause } from "./prompt.js"
 
 const token = process.env.BOT_API_KEY;
 const bot = new Bot(token); 
@@ -11,12 +11,19 @@ bot.command("createDAO", async (ctx) => {
   console.log("ctx", ctx)
   const message = ctx.message; 
   const daoInitMsg = ctx.match;
-  console.log("daoInitMsg", daoInitMsg)
   const daoInitJSON = await analyzeDAOInit(daoInitMsg);
-  console.log("daoInitJSON", daoInitJSON);
   const daoAddress = await initDAO(daoInitJSON.daoName, daoInitJSON.registrationFee)
   ctx.reply(`DAO initialized at address: ${daoAddress}`);
 });
+
+bot.command("DAOpause", async (ctx) => {
+  console.log("ctx", ctx)
+  const message = ctx.message; 
+  const tx = await emergencyPause();
+  ctx.reply(`DAO emergency pause: ${tx}`);
+});
+
+
 
 // Commands
 //await bot.api.setMyCommands([

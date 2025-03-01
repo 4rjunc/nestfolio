@@ -84,16 +84,71 @@ export async function initDAO(daoName, registrationFee){
     const DAOsignature = await sendAndConfirmTransaction(
       connection,
       DAOtransaction,
-      [keypair] // Assuming 'creator' is the keypair
+      [keypair] 
     );
 
     console.log("Transaction successful:", DAOsignature);
     console.log("Transaction URL:", `https://explorer.solana.com/tx/${DAOsignature}?cluster=devnet`);
 
-    // Fetch and verify the DAO account data
-    //const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
-    //console.log(dao);
     return daoAddress;
+  } catch (err) {
+    console.error("Error:", err.message);
+    console.error("Stack:", err.stack);
+  }
+}
+
+export async function emergencyPause(){
+  try{
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), keypair.publicKey.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const discriminator = Buffer.from([
+        21,
+        143,
+        27,
+        142,
+        200,
+        181,
+        210,
+        255
+      ]);
+
+
+    const pauseTimestamp = Math.floor(Date.now() / 1000) + 3600;
+    
+    // 2. Encode the DAO name string
+    const timestampBuffer = Buffer.alloc(8);
+    const timestampBN = new BN(pauseTimestamp);
+    timestampBN.toArrayLike(Buffer, 'le', 8).copy(timestampBuffer);
+
+    // 4. Combine all parts
+    const completeData = Buffer.concat([discriminator, timestampBuffer]);
+
+    console.log("Creating emergencyPause instruction...");
+    const instruction = new TransactionInstruction({
+      keys: [
+        { pubkey: creator.publicKey, isSigner: true, isWritable: false }, // Assuming creator is authorized to pause
+        { pubkey: daoAddress, isSigner: false, isWritable: true }
+      ],
+      programId: DAO_PROGRAM_ID,
+      data: completeData
+    });
+
+    // Create and send transaction
+    console.log("Sending transaction...");
+    const transaction = new Transaction().add(instruction);
+     const signature = await sendAndConfirmTransaction(
+        connection,
+        transaction,
+        [creator]
+      );
+
+      console.log("Emergency pause transaction successful:", signature);
+      console.log("Transaction URL:", `https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+
+    return signature;
   } catch (err) {
     console.error("Error:", err.message);
     console.error("Stack:", err.stack);
