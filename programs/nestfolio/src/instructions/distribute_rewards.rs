@@ -39,8 +39,8 @@ impl<'info> DistributeRewards<'info> {
     pub fn distribute_rewards(&mut self) -> Result<()> {
         let highest_proposer = &self.proposal1.proposer;
 
-        //let reward_amount = self.organization.treasury_balance;
-        //require!(reward_amount > 0, NestfolioError::InsufficientFunds);
+        let reward_amount = self.organization.treasury_balance;
+        require!(reward_amount > 0, NestfolioError::InsufficientFunds);
         let org = self.organization.key();
 
         let ix = system_instruction::transfer(&self.treasury.key(), &highest_proposer.key(), 10);

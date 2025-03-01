@@ -400,6 +400,9 @@ var [proposalAddress] = PublicKey.findProgramAddressSync(
   });
 
   it("distribute rewards", async () => {
+
+    const creatorWallet = provider.wallet;
+
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -495,7 +498,7 @@ var [proposalAddress] = PublicKey.findProgramAddressSync(
         proposal3: proposals[2].key,
         systemProgram: SystemProgram.programId,
       })
-      .signers([creator])
+      .signers([provider.wallet.payer])
       .rpc();
 
     const treasuryAfter = await daoProgram.account.treasury.fetch(treasuryPDA);
