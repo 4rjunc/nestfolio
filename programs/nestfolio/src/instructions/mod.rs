@@ -1,5 +1,6 @@
 pub mod create_proposal;
 pub mod desposit_fund;
+pub mod distribute_rewards;
 pub mod init_member;
 pub mod init_org;
 pub mod list_proposal;
@@ -9,6 +10,7 @@ pub mod withdraw_fund;
 
 pub use create_proposal::*;
 pub use desposit_fund::*;
+pub use distribute_rewards::*;
 pub use init_member::*;
 pub use init_org::*;
 pub use list_proposal::*;
