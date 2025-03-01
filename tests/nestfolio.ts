@@ -203,7 +203,8 @@ describe("DAO Initialization", () => {
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
     );
-    const [proposalAddress] = PublicKey.findProgramAddressSync(
+
+    var [proposalAddress] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("proposal"),
         creator.toBuffer(),
@@ -226,6 +227,58 @@ describe("DAO Initialization", () => {
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .rpc();
+
+    var [proposalAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("proposal"),
+        creator.toBuffer(),
+        daoAddress.toBuffer(),
+        Buffer.from("Buy a new car"),
+      ],
+      DAO_PROGRAM_ID
+    );
+
+
+  await daoProgram.methods
+      .createProposal(
+        "Buy a new car",
+        "Buy a new car for the organization",
+        new anchor.BN(1821246480)
+      )
+      .accounts({
+        proposer: creator,
+        organization: daoAddress,
+        proposal: proposalAddress,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
+var [proposalAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("proposal"),
+        creator.toBuffer(),
+        daoAddress.toBuffer(),
+        Buffer.from("Buy a new cow"),
+      ],
+      DAO_PROGRAM_ID
+    );
+
+
+
+  await daoProgram.methods
+      .createProposal(
+        "Buy a new cow",
+        "Buy a new cow for the organization",
+        new anchor.BN(1821246480)
+      )
+      .accounts({
+        proposer: creator,
+        organization: daoAddress,
+        proposal: proposalAddress,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
+
 
     const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
     console.log("Proposal created successfully:", proposal);
@@ -353,39 +406,40 @@ describe("DAO Initialization", () => {
     );
 
     const [treasuryPDA] = PublicKey.findProgramAddressSync(
-      [Buffer.from("treasury")],
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
       DAO_PROGRAM_ID
     );
 
     console.log("DAO Address:", daoAddress.toBase58());
     console.log("Treasury PDA:", treasuryPDA.toBase58());
 
-    let dao;
-    try {
-      dao = await daoProgram.account.organisation.fetch(daoAddress);
-    } catch (err) {
-      throw new Error("DAO organization not initialized.");
-    }
+    const dao = await daoProgram.account.organisation.fetch(daoAddress);
 
-    if (!dao.proposalList || dao.proposalList.length < 3) {
-      console.log("Creating missing proposals...");
-      for (let i = dao.proposalList.length; i < 3; i++) {
-        const proposalKeypair = new Keypair();
-        await daoProgram.methods
-          .createProposal(`Proposal ${i + 1}`)
-          .accounts({
-            creator,
-            proposal: proposalKeypair.publicKey,
-            organization: daoAddress,
-            systemProgram: SystemProgram.programId,
-          })
-          .signers([proposalKeypair])
-          .rpc();
-      }
+    //try {
+    //  dao = await daoProgram.account.organisation.fetch(daoAddress);
+    //} catch (err) {
+    //  throw new Error("DAO organization not initialized.");
+    //}
+
+    //if (!dao.proposalList || dao.proposalList.length < 3) {
+    //  console.log("Creating missing proposals...");
+    //  for (let i = dao.proposalList.length; i < 3; i++) {
+    //    const proposalKeypair = new Keypair();
+    //    await daoProgram.methods
+    //      .createProposal(`Proposal ${i + 1}`)
+    //      .accounts({
+    //        creator,
+    //        proposal: proposalKeypair.publicKey,
+    //        organization: daoAddress,
+    //        systemProgram: SystemProgram.programId,
+    //      })
+    //      .signers([proposalKeypair])
+    //      .rpc();
+    //  }
 
       // Fetch updated DAO data after creating proposals
-      dao = await daoProgram.account.organisation.fetch(daoAddress);
-    }
+    //  dao = await daoProgram.account.organisation.fetch(daoAddress);
+    //}
 
     const proposalPromises = dao.proposalList
       .slice(0, 3)
@@ -398,6 +452,9 @@ describe("DAO Initialization", () => {
 
     const proposals = await Promise.all(proposalPromises);
 
+    console.log("Proposals", proposals);
+
+
     proposals.forEach((p, i) => {
       console.log(
         `Proposal ${i + 1}:`,
@@ -407,7 +464,6 @@ describe("DAO Initialization", () => {
       );
     });
 
-    
 
     // Find the most voted proposal
     const mostVotedProposal = proposals.reduce(
@@ -437,9 +493,9 @@ describe("DAO Initialization", () => {
         proposal1: proposals[0].key,
         proposal2: proposals[1].key,
         proposal3: proposals[2].key,
-        proposer: new PublicKey(mostVotedProposal.proposal.proposer),
         systemProgram: SystemProgram.programId,
       })
+      .signers([creator])
       .rpc();
 
     const treasuryAfter = await daoProgram.account.treasury.fetch(treasuryPDA);

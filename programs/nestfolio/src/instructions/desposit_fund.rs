@@ -1,5 +1,8 @@
-use anchor_lang::{ prelude::*, system_program::{ transfer, Transfer } };
-use crate::states::{ Organisation, Treasury };
+use crate::states::{Organisation, Treasury};
+use anchor_lang::{
+    prelude::*,
+    system_program::{transfer, Transfer},
+};
 
 #[derive(Accounts)]
 pub struct DepositFund<'info> {
@@ -30,6 +33,8 @@ impl<'info> DepositFund<'info> {
         let cpi_ctx = CpiContext::new(self.system_program.to_account_info(), cpi_accounts);
 
         transfer(cpi_ctx, amount)?;
+
+        self.organisation.treasury_balance += amount;
 
         Ok(())
     }

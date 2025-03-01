@@ -15,7 +15,7 @@ pub struct DistributeRewards<'info> {
 
     #[account(
         mut,
-        seeds = [b"treasury"],
+        seeds = [b"treasury", organization.key().as_ref()],
         bump
     )]
     pub treasury: Account<'info, Treasury>,
@@ -32,45 +32,27 @@ pub struct DistributeRewards<'info> {
     #[account(mut)]
     pub proposal3: Account<'info, Proposal>,
 
-    #[account(mut)]
-    pub proposer: SystemAccount<'info>,
-
     pub system_program: Program<'info, System>,
 }
 
 impl<'info> DistributeRewards<'info> {
     pub fn distribute_rewards(&mut self) -> Result<()> {
-        let mut highest_proposal = &self.proposal1;
-        let mut highest_votes = self.proposal1.up_votes - self.proposal1.down_votes;
+        let highest_proposer = &self.proposal1.proposer;
 
-        let proposal2_votes = self.proposal2.up_votes - self.proposal2.down_votes;
-        if proposal2_votes > highest_votes {
-            highest_proposal = &self.proposal2;
-            highest_votes = proposal2_votes;
-        }
+        //let reward_amount = self.organization.treasury_balance;
+        //require!(reward_amount > 0, NestfolioError::InsufficientFunds);
+        let org = self.organization.key();
 
-        let proposal3_votes = self.proposal3.up_votes - self.proposal3.down_votes;
-        if proposal3_votes > highest_votes {
-            highest_proposal = &self.proposal3;
-        }
+        let ix = system_instruction::transfer(&self.treasury.key(), &highest_proposer.key(), 10);
 
-        let reward_amount = self.organization.treasury_balance;
-        require!(reward_amount > 0, NestfolioError::InsufficientFunds);
-
-        let ix = system_instruction::transfer(
-            &self.treasury.key(),
-            &highest_proposal.proposer,
-            reward_amount,
-        );
-
-        let signer_seeds: &[&[u8]] = &[b"treasury", &[self.treasury.bump]];
+        let signer_seeds: &[&[u8]] = &[b"treasury", org.as_ref(), &[self.treasury.bump]];
         let signer = &[&signer_seeds[..]];
 
         invoke_signed(
             &ix,
             &[
                 self.treasury.to_account_info(),
-                self.proposer.to_account_info(), 
+                self.creator.to_account_info(),
                 self.system_program.to_account_info(),
             ],
             signer,
