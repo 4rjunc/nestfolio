@@ -1,7 +1,7 @@
 import { BankrunProvider, startAnchor } from "anchor-bankrun";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Keypair, PublicKey, Connection } from "@solana/web3.js";
+import { Keypair, PublicKey, Connection, SystemProgram } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
@@ -344,5 +344,110 @@ describe("DAO Initialization", () => {
       0,
       "No proposals found for the organization"
     );
+  });
+
+  it("distribute rewards", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const [treasuryPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury")],
+      DAO_PROGRAM_ID
+    );
+
+    console.log("DAO Address:", daoAddress.toBase58());
+    console.log("Treasury PDA:", treasuryPDA.toBase58());
+
+    let dao;
+    try {
+      dao = await daoProgram.account.organisation.fetch(daoAddress);
+    } catch (err) {
+      throw new Error("DAO organization not initialized.");
+    }
+
+    if (!dao.proposalList || dao.proposalList.length < 3) {
+      console.log("Creating missing proposals...");
+      for (let i = dao.proposalList.length; i < 3; i++) {
+        const proposalKeypair = new Keypair();
+        await daoProgram.methods
+          .createProposal(`Proposal ${i + 1}`)
+          .accounts({
+            creator,
+            proposal: proposalKeypair.publicKey,
+            organization: daoAddress,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([proposalKeypair])
+          .rpc();
+      }
+
+      // Fetch updated DAO data after creating proposals
+      dao = await daoProgram.account.organisation.fetch(daoAddress);
+    }
+
+    const proposalPromises = dao.proposalList
+      .slice(0, 3)
+      .map(async (proposalKey) => {
+        return {
+          key: proposalKey,
+          proposal: await daoProgram.account.proposal.fetch(proposalKey),
+        };
+      });
+
+    const proposals = await Promise.all(proposalPromises);
+
+    proposals.forEach((p, i) => {
+      console.log(
+        `Proposal ${i + 1}:`,
+        p.proposal.title,
+        "Votes:",
+        p.proposal.upVotes - p.proposal.downVotes
+      );
+    });
+
+    
+
+    // Find the most voted proposal
+    const mostVotedProposal = proposals.reduce(
+      (max, proposal) =>
+        proposal.upVotes - proposal.downVotes > max.upVotes - max.downVotes
+          ? proposal
+          : max,
+      proposals[0]
+    )
+
+    console.log(
+      "Most Voted Proposal:",
+      mostVotedProposal.proposal.title,
+      "Net Votes:",
+      mostVotedProposal.proposal.upVotes - mostVotedProposal.proposal.downVotes
+    );
+
+    const treasuryBefore = await daoProgram.account.treasury.fetch(treasuryPDA);
+    console.log("Treasury Balance Before:", treasuryBefore.amount.toString());
+
+    await daoProgram.methods
+      .distributeRewards()
+      .accounts({
+        creator,
+        organization: daoAddress,
+        treasury: treasuryPDA,
+        proposal1: proposals[0].key,
+        proposal2: proposals[1].key,
+        proposal3: proposals[2].key,
+        proposer: new PublicKey(mostVotedProposal.proposal.proposer),
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    const treasuryAfter = await daoProgram.account.treasury.fetch(treasuryPDA);
+    console.log("Treasury Balance After:", treasuryAfter.amount.toString());
+
+    const rewardReceiver = await provider.connection.getBalance(
+      mostVotedProposal.proposal.proposer
+    );
+    console.log("Reward Receiver Balance:", rewardReceiver);
   });
 });

@@ -85,4 +85,9 @@ pub mod nestfolio {
             .list_proposal(title, description, expiry_time)?;
         Ok(())
     }
+
+    pub fn distribute_rewards(ctx: Context<DistributeRewards>) -> Result<()> {
+        ctx.accounts.distribute_rewards()?;
+        Ok(())
+    }
 }
