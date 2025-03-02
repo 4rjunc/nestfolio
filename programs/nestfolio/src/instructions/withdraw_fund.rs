@@ -1,4 +1,4 @@
-use crate::states::{Organisation, Treasury};
+use crate::states::Organisation;
 use anchor_lang::{
     prelude::*,
     solana_program::{program::invoke_signed, system_instruction},
@@ -6,51 +6,55 @@ use anchor_lang::{
 
 #[derive(Accounts)]
 pub struct WithdrawFund<'info> {
-    ///CHECK
     #[account(mut)]
-    pub signer: AccountInfo<'info>,
+    pub signer: Signer<'info>,
 
     #[account(mut)]
     pub organization: Account<'info, Organisation>,
-
+    ///CHECK
     #[account(
         mut,
         seeds = [b"treasury", organization.key().as_ref()],
-        bump = treasury.bump
+        bump,
     )]
-    pub treasury: Account<'info, Treasury>,
+    pub treasury_pda: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
 }
 
 impl<'info> WithdrawFund<'info> {
-    pub fn withdraw_fund(&mut self, amount: u64) -> Result<()> {
-        msg!("WithdrawFund+++++++++++++++++++");
+    pub fn withdraw_fund(&mut self, amount: u64, bump: u8) -> Result<()> {
+        msg!("Organization: {}", self.organization.key());
+        msg!("Treasury PDA: {}", self.treasury_pda.key());
+        msg!("Treasury Bump: {}", bump);
 
-        msg!("orga {}", self.organization.key());
+        let transfer_instruction =
+            system_instruction::transfer(&self.treasury_pda.key(), &self.signer.key(), amount);
 
         let binding = self.organization.key();
-        let treasury_seeds = &[b"treasury", binding.as_ref(), &[self.treasury.bump]];
-        let signer_seeds = &[&treasury_seeds[..]];
-
-        msg!("Expected Treasury PDA: {}", self.treasury.key());
-        msg!("Treasury Bump in Program: {}", self.treasury.bump);
-
-        let transfer_instruction = system_instruction::transfer(
-            &self.treasury.key(), // Sender (Treasury PDA)
-            &self.signer.key(),   // Receiver (Signer)
-            amount,
-        );
+        let seeds = &[b"treasury", binding.as_ref(), &[bump]];
+        let signer_seeds = &[&seeds[..]];
 
         invoke_signed(
             &transfer_instruction,
             &[
-                self.treasury.to_account_info(),
+                self.treasury_pda.to_account_info(),
                 self.signer.to_account_info(),
                 self.system_program.to_account_info(),
             ],
             signer_seeds,
         )?;
+
+        self.organization.treasury_balance = self
+            .organization
+            .treasury_balance
+            .checked_sub(amount)
+            .ok_or(ProgramError::InsufficientFunds)?;
+
+        msg!(
+            "Treasury Updated Balance: {}",
+            self.organization.treasury_balance
+        );
 
         Ok(())
     }

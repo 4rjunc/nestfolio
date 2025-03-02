@@ -25,6 +25,11 @@ impl<'info> InitializeOrganization<'info> {
         fee: u64,
         bumps: &InitializeOrganizationBumps,
     ) -> Result<()> {
+        let (treasury_pda, _bump) = Pubkey::find_program_address(
+            &[b"treasury", self.organization.key().as_ref()],
+            &crate::ID,
+        );
+
         self.organization.set_inner(Organisation {
             admin: self.creator.key().clone(),
             name,
@@ -40,6 +45,7 @@ impl<'info> InitializeOrganization<'info> {
             paused: false,
             unlock_timestamp: 0,
             proposal_list: vec![],
+            treasury_pda,
         });
 
         Ok(())
