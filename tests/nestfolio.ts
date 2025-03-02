@@ -5,7 +5,6 @@ import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
-import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system";
 
 const IDL = require("../target/idl/nestfolio.json");
 
@@ -14,7 +13,6 @@ const DAO_PROGRAM_ID = new PublicKey(
 );
 
 describe("DAO Initialization", () => {
-  let context;
   let provider;
   let daoProgram;
   let creator;
@@ -22,30 +20,6 @@ describe("DAO Initialization", () => {
   let voter = new Keypair();
 
   before(async () => {
-    context = await startAnchor(
-      "",
-      [{ name: "nestfolio", programId: DAO_PROGRAM_ID }],
-      [
-        {
-          address: voter.publicKey,
-          info: {
-            lamports: 2_000_000_000,
-            data: Buffer.alloc(0),
-            owner: SYSTEM_PROGRAM_ID,
-            executable: false,
-          },
-        },
-        {
-          address: member.publicKey,
-          info: {
-            lamports: 5_000_000_000,
-            data: Buffer.alloc(0),
-            owner: SYSTEM_PROGRAM_ID,
-            executable: false,
-          },
-        },
-      ]
-    );
     provider = anchor.getProvider();
     anchor.setProvider(provider);
     daoProgram = new Program<Nestfolio>(IDL, provider);
