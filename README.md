@@ -1,5 +1,7 @@
 # Nestfolio - Technical Specification
 
+https://github.com/user-attachments/assets/2fc722f2-1f0b-4adc-86c9-ed367d73ee81
+
 - [LOI](https://docs.google.com/document/d/17RCmnB56av2gCFnuXC1-FK5gN8O0iw_5GI_I_45z0C4/edit?usp=sharing)
 - [User Stories](https://docs.google.com/document/d/1ZQPu2TxbBhLUpNtphhLAHh3od6hKzoxPjCG04ynyfmo/edit?usp=sharing)
 - [Arch Diagrams](https://docs.google.com/document/d/187Y3Kyx5x9pkQKORfxurYicBLcGn-1ZUo9evkm4ep-4/edit?usp=sharing)
