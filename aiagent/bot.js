@@ -1,31 +1,42 @@
 import { Bot, GrammyError, HttpError } from "grammy";
-import 'dotenv/config'
-import { initDAO, emergencyPause, resumeOperations, createProposal, depositFund, airdrop, getBalance, getProposals, withdrawFund } from './program.js'; 
-import { analyzeDAOInit, analyzeProposal } from "./prompt.js"
+import "dotenv/config";
+import {
+  initDAO,
+  emergencyPause,
+  resumeOperations,
+  createProposal,
+  depositFund,
+  airdrop,
+  getBalance,
+  withdrawFund,
+} from "./program.js";
+import { analyzeDAOInit, analyzeProposal } from "./prompt.js";
 
 const token = process.env.BOT_API_KEY;
-const bot = new Bot(token); 
+const bot = new Bot(token);
 
-// Add this command before bot.start()
 bot.command("start", async (ctx) => {
   ctx.reply(
     "Welcome to the Nestfolio Bot! Here are the available commands:\n\n" +
-    "/createDAO [parameters] - Initialize a new DAO with name and registration fee\n" +
-    "/createProposal [details] - Create a new proposal with title, description and deadline\n" +
-    "/DAOpause - Emergency pause of DAO operations\n" +
-    "/DAOresume - Resume DAO operations after pause\n" +
-    "/deposit - Get address to deposit funds\n" +
-    "/withdraw - Withdraw funds from the DAO\n" +
-    "/airdrop - Trigger token airdrop\n" +
-    "/balance - Check current DAO balance\n\n" +
-    "To get started, try creating a DAO with /createDAO [name] [fee]"
+      "/createDAO [parameters] - Initialize a new DAO with name and registration fee\n" +
+      "/createProposal [details] - Create a new proposal with title, description and deadline\n" +
+      "/DAOpause - Emergency pause of DAO operations\n" +
+      "/DAOresume - Resume DAO operations after pause\n" +
+      "/deposit - Get address to deposit funds\n" +
+      "/withdraw - Withdraw funds from the DAO\n" +
+      "/airdrop - Trigger token airdrop\n" +
+      "/balance - Check current DAO balance\n\n" +
+      "To get started, try creating a DAO with /createDAO [name] [fee]"
   );
 });
 
 bot.command("createDAO", async (ctx) => {
   const daoInitMsg = ctx.match;
   const daoInitJSON = await analyzeDAOInit(daoInitMsg);
-  const daoAddress = await initDAO(daoInitJSON.daoName, daoInitJSON.registrationFee)
+  const daoAddress = await initDAO(
+    daoInitJSON.daoName,
+    daoInitJSON.registrationFee
+  );
   ctx.reply(`DAO initialized at address: ${daoAddress}`);
 });
 
@@ -40,9 +51,13 @@ bot.command("DAOresume", async (ctx) => {
 });
 
 bot.command("createProposal", async (ctx) => {
-  const message = ctx.match; 
-  const proposalJSON = await analyzeProposal(message)
-  const tx = await createProposal(proposalJSON.title, proposalJSON.description, proposalJSON.deadline);
+  const message = ctx.match;
+  const proposalJSON = await analyzeProposal(message);
+  const tx = await createProposal(
+    proposalJSON.title,
+    proposalJSON.description,
+    proposalJSON.deadline
+  );
   ctx.reply(`DAO create proposal: ${tx}`);
 });
 

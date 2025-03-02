@@ -9,7 +9,7 @@ import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 const IDL = require("../target/idl/nestfolio.json");
 
 const DAO_PROGRAM_ID = new PublicKey(
-  "FXvTKSj5SXeRvaKqGxVc97pekvqN77btHBoZ4Qsn9iZX"
+  "FmvHXQmUhsY1SYmQgysUC3wJjM4JQCsGHwHnsfw1YDUs"
 );
 
 describe("DAO Initialization", () => {

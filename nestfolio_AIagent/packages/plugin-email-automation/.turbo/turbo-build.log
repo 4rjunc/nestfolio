@@ -1,5 +1,0 @@
-
-
-> @elizaos/plugin-email-automation@0.25.6-alpha.1 build /Users/arjunc/Documents/solana/nestfolio/nestfolio_AIagent/packages/plugin-email-automation
-> tsc --declaration --emitDeclarationOnly false --noEmit false --allowImportingTsExtensions false
-
