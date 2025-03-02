@@ -17,4 +17,7 @@ pub struct Organisation {
     pub voting_threshold: u64,
     pub paused: bool,
     pub unlock_timestamp: i64,
+    #[max_len(100)]
+    pub proposal_list: Vec<Pubkey>,
+    pub treasury_pda: Pubkey,
 }

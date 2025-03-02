@@ -14,7 +14,7 @@ pub struct InitializeOrganization<'info> {
         bump,
         space = 8 + Organisation::INIT_SPACE
     )]
-    pub organisation: Account<'info, Organisation>,
+    pub organization: Account<'info, Organisation>,
     pub system_program: Program<'info, System>,
 }
 
@@ -23,9 +23,14 @@ impl<'info> InitializeOrganization<'info> {
         &mut self,
         name: String,
         fee: u64,
-        bumps: &InitializeOrganizationBumps
+        bumps: &InitializeOrganizationBumps,
     ) -> Result<()> {
-        self.organisation.set_inner(Organisation {
+        let (treasury_pda, _bump) = Pubkey::find_program_address(
+            &[b"treasury", self.organization.key().as_ref()],
+            &crate::ID,
+        );
+
+        self.organization.set_inner(Organisation {
             admin: self.creator.key().clone(),
             name,
             treasury_balance: 0,
@@ -35,11 +40,14 @@ impl<'info> InitializeOrganization<'info> {
             proposal_limit: 10,
             member_registration_fee: fee,
             minimum_deposit_amount: 1000,
-            org_bump: bumps.organisation,
+            org_bump: bumps.organization,
             voting_threshold: 5000000000,
             paused: false,
             unlock_timestamp: 0,
+            proposal_list: vec![],
+            treasury_pda,
         });
+
         Ok(())
     }
 }

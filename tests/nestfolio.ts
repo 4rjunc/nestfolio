@@ -1,7 +1,7 @@
-import { BankrunProvider, startAnchor } from "anchor-bankrun";
+import { startAnchor } from "anchor-bankrun";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
-import { Keypair, PublicKey, Connection } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { Nestfolio } from "../target/types/nestfolio";
 import { expect } from "chai";
 import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
@@ -18,31 +18,57 @@ describe("DAO Initialization", () => {
   let provider;
   let daoProgram;
   let creator;
-  let member;
+  let member = new Keypair();
   let voter = new Keypair();
 
   before(async () => {
     context = await startAnchor(
       "",
       [{ name: "nestfolio", programId: DAO_PROGRAM_ID }],
-      [{
-        address: voter.publicKey,
-        info: {
-          lamports: 2_000_000_000, // 1 SOL equivalent
-          data: Buffer.alloc(0),
-          owner: SYSTEM_PROGRAM_ID,
-          executable: false,
+      [
+        {
+          address: voter.publicKey,
+          info: {
+            lamports: 2_000_000_000,
+            data: Buffer.alloc(0),
+            owner: SYSTEM_PROGRAM_ID,
+            executable: false,
+          },
         },
-      }
+        {
+          address: member.publicKey,
+          info: {
+            lamports: 5_000_000_000,
+            data: Buffer.alloc(0),
+            owner: SYSTEM_PROGRAM_ID,
+            executable: false,
+          },
+        },
       ]
     );
-    provider = new BankrunProvider(context);
+    provider = anchor.getProvider();
+    anchor.setProvider(provider);
     daoProgram = new Program<Nestfolio>(IDL, provider);
     creator = provider.wallet.publicKey;
-    member = new Keypair().publicKey;
+
+    await provider.connection.confirmTransaction(
+      await provider.connection.requestAirdrop(
+        member.publicKey,
+        2 * anchor.web3.LAMPORTS_PER_SOL
+      ),
+      "confirmed"
+    );
+
+    await provider.connection.confirmTransaction(
+      await provider.connection.requestAirdrop(
+        voter.publicKey,
+        anchor.web3.LAMPORTS_PER_SOL
+      ),
+      "confirmed"
+    );
   });
 
-  it("Initialize a DAO", async () => {
+  it("Should initialize a DAO", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -66,7 +92,7 @@ describe("DAO Initialization", () => {
     expect(dao.minimumDepositAmount.toString()).to.equal("1000");
   });
 
-  it("Update Organisation Settings", async () => {
+  it("Should update organisation settings", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -74,7 +100,7 @@ describe("DAO Initialization", () => {
     await daoProgram.methods
       .updateOrganisation(new anchor.BN(7000000000), new anchor.BN(20))
       .accounts({
-        organisation: daoAddress,
+        organization: daoAddress,
       })
       .rpc();
 
@@ -85,7 +111,7 @@ describe("DAO Initialization", () => {
     expect(dao.proposalLimit).to.equal(20);
   });
 
-  it("emergency pause", async () => {
+  it("Should pause DAO operations", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -96,7 +122,7 @@ describe("DAO Initialization", () => {
     await daoProgram.methods
       .emergencyPause(new anchor.BN(pauseTimestamp))
       .accounts({
-        organisation: daoAddress,
+        organization: daoAddress,
       })
       .rpc();
 
@@ -108,7 +134,7 @@ describe("DAO Initialization", () => {
     expect(dao.unlockTimestamp.toString()).to.equal(pauseTimestamp.toString());
   });
 
-  it("resume DAO operations", async () => {
+  it("Should resume DAO operations", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -117,7 +143,7 @@ describe("DAO Initialization", () => {
     await daoProgram.methods
       .resumeOperations()
       .accounts({
-        organisation: daoAddress,
+        organization: daoAddress,
       })
       .rpc();
 
@@ -127,33 +153,55 @@ describe("DAO Initialization", () => {
     expect(dao.paused).to.be.false;
   });
 
-  it("deposit funds", async () => {
+  it("should deposit funds into the treasury", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
-      DAO_PROGRAM_ID
+      daoProgram.programId
     );
 
-    const [treasuryAddress] = PublicKey.findProgramAddressSync(
+    const [treasuryAddress, treasuryBump] = PublicKey.findProgramAddressSync(
       [Buffer.from("treasury"), daoAddress.toBuffer()],
-      DAO_PROGRAM_ID
+      daoProgram.programId
     );
 
+    const memberBalanceBefore = await provider.connection.getBalance(
+      member.publicKey
+    );
+    const memberBalanceBeforeInSol =
+      Number(memberBalanceBefore) / anchor.web3.LAMPORTS_PER_SOL;
+    console.log(`Member Balance Before: ${memberBalanceBeforeInSol} SOL`);
+
+    const depositAmount = new anchor.BN(1_000_000_000);
     await daoProgram.methods
-      .depositFund(new anchor.BN(1000000))
+      .depositFund(depositAmount, treasuryBump)
       .accounts({
-        organisation: daoAddress,
-        treasury: treasuryAddress,
-        signer: member.publicKey,
+        member: member.publicKey,
+        organization: daoAddress,
+        treasuryPda: treasuryAddress,
+        systemProgram: SystemProgram.programId,
       })
-      .signers(member instanceof anchor.web3.Keypair ? [member] : [])
+      .signers([member])
       .rpc();
 
-    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+    const dao = await daoProgram.account.organisation.fetch(daoAddress);
+    console.log("Organization:", dao);
 
-    console.log(dao);
+    const treasuryBalance = await provider.connection.getBalance(
+      treasuryAddress
+    );
+    const treasuryBalanceInSol =
+      Number(treasuryBalance) / anchor.web3.LAMPORTS_PER_SOL;
+    console.log(`Treasury Balance: ${treasuryBalanceInSol} SOL`);
+
+    const memberBalanceAfter = await provider.connection.getBalance(
+      member.publicKey
+    );
+    const memberBalanceAfterInSol =
+      Number(memberBalanceAfter) / anchor.web3.LAMPORTS_PER_SOL;
+    console.log(`Member Balance After: ${memberBalanceAfterInSol} SOL`);
   });
 
-  it("Register Member", async () => {
+  it("Should register a member", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -194,10 +242,11 @@ describe("DAO Initialization", () => {
       provider.connection,
       memberNftTokenAccount
     );
+    expect(member_data.name).to.equal("Avhi");
     expect(tokenAccount.amount.toString()).to.equal("1");
     console.log("NFT Minted Successfully!");
   });
-  it("Create Proposal", async () => {
+  it("Should create a proposal", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -228,10 +277,19 @@ describe("DAO Initialization", () => {
 
     const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
     console.log("Proposal created successfully:", proposal);
+
+    expect(proposal.title).to.equal("Buy a new laptop");
+    expect(proposal.description).to.equal(
+      "Buy a new laptop for the organization"
+    );
+    expect(proposal.proposer.toBase58()).to.equal(creator.toBase58());
+    expect(proposal.upVotes.toString()).to.equal("0");
+    expect(proposal.downVotes.toString()).to.equal("0");
+    expect(proposal.expiryTime.toString()).to.equal("1821246480");
   });
 
-  it("Vote on Proposal", async () => {
-    console.log("wallet balance:",)
+  it("Should Vote on a Proposal", async () => {
+    console.log("wallet balance:");
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],
       DAO_PROGRAM_ID
@@ -269,6 +327,30 @@ describe("DAO Initialization", () => {
       .signers([voter])
       .rpc();
 
+    await daoProgram.methods
+      .voteOnProposal(true)
+      .accounts({
+        voter: voter.publicKey,
+        proposal: proposalAddress,
+        proposalNftMint,
+        proposalNftTokenAccount,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([voter])
+      .rpc();
+
+    await daoProgram.methods
+      .voteOnProposal(false)
+      .accounts({
+        voter: voter.publicKey,
+        proposal: proposalAddress,
+        proposalNftMint,
+        proposalNftTokenAccount,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .signers([voter])
+      .rpc();
+
     const vote = await daoProgram.account.proposal.fetch(proposalAddress);
     console.log("Proposal voted successfully:", vote);
 
@@ -276,7 +358,102 @@ describe("DAO Initialization", () => {
       provider.connection,
       proposalNftTokenAccount
     );
-    //expect(tokenAccount.amount.toString()).to.equal("1");
     console.log("NFT Minted Successfully!");
+
+    expect(tokenAccount.amount.toString()).to.equal("0");
+    expect(vote.upVotes.toString()).to.equal("2");
+    expect(vote.downVotes.toString()).to.equal("1");
+  });
+
+  it("Should query/list votes", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+    if (!dao) {
+      throw new Error("DAO not found!");
+    }
+    console.log("DAO Name:", dao.name);
+
+    if (!dao.proposalList || dao.proposalList.length === 0) {
+      console.log("No proposals found.");
+      return;
+    }
+
+    for (const proposalAddress of dao.proposalList) {
+      const proposal = await daoProgram.account.proposal.fetchNullable(
+        proposalAddress
+      );
+      if (!proposal) continue;
+
+      console.log(`Proposal: ${proposal.title}`);
+      console.log("  Description:", proposal.description);
+      console.log("  Proposer:", proposal.proposer.toBase58());
+      console.log("  Up Votes:", proposal.upVotes.toString());
+      console.log("  Down Votes:", proposal.downVotes.toString());
+      console.log("  Status:", proposal.status);
+      console.log(
+        "  Expiry:",
+        new Date(proposal.expiryTime.toNumber() * 1000).toISOString()
+      );
+    }
+
+    expect(dao.proposalList.length).to.be.greaterThan(
+      0,
+      "No proposals found for the organization"
+    );
+    expect(dao.proposalList.length).to.equal(1);
+  });
+
+  it("should withdraw funds from the treasury", async () => {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), creator.toBuffer()],
+      daoProgram.programId
+    );
+
+    const [treasuryAddress, treasuryBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
+      daoProgram.programId
+    );
+
+    console.log("Expected Treasury PDA:", treasuryAddress.toBase58());
+    console.log("Treasury Bump:", treasuryBump);
+
+    const treasuryBalanceBefore = await provider.connection.getBalance(
+      treasuryAddress
+    );
+    const treasuryBalanceBeforeInSol =
+      Number(treasuryBalanceBefore) / anchor.web3.LAMPORTS_PER_SOL;
+    console.log(
+      `Treasury Balance Before Withdrawal: ${treasuryBalanceBeforeInSol} SOL`
+    );
+
+    const withdrawAmount = new anchor.BN(500_000_000);
+    await daoProgram.methods
+      .withdrawFund(withdrawAmount, treasuryBump)
+      .accounts({
+        signer: member.publicKey,
+        organization: daoAddress,
+        treasuryPda: treasuryAddress,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([member])
+      .rpc();
+
+    const treasuryBalanceAfter = await provider.connection.getBalance(
+      treasuryAddress
+    );
+    const treasuryBalanceAfterInSol =
+      Number(treasuryBalanceAfter) / anchor.web3.LAMPORTS_PER_SOL;
+    console.log(
+      `Treasury Balance After Withdrawal: ${treasuryBalanceAfterInSol} SOL`
+    );
+
+    const dao = await daoProgram.account.organisation.fetch(daoAddress);
+    expect(dao.treasuryBalance.toString(), "500000000");
+
+    expect(treasuryBalanceAfter, "500_000_000");
   });
 });

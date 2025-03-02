@@ -51,13 +51,14 @@ pub mod nestfolio {
         Ok(())
     }
 
-    pub fn deposit_fund(ctx: Context<DepositFund>, amount: u64) -> Result<()> {
-        ctx.accounts.deposit_fund(amount)?;
+    pub fn deposit_fund(ctx: Context<DepositFund>, amount: u64, bump: u8) -> Result<()> {
+        // let bump = *ctx.bumps.get("treasury").unwrap();
+        ctx.accounts.deposit_fund(amount, bump)?;
         Ok(())
     }
 
-    pub fn withdraw_fund(ctx: Context<WithdrawFund>, amount: u64) -> Result<()> {
-        ctx.accounts.withdraw_fund(amount)?;
+    pub fn withdraw_fund(ctx: Context<WithdrawFund>, amount: u64, bump: u8) -> Result<()> {
+        ctx.accounts.withdraw_fund(amount, bump)?;
         Ok(())
     }
     pub fn create_proposal(
@@ -72,6 +73,17 @@ pub mod nestfolio {
     }
     pub fn vote_on_proposal(ctx: Context<VoteOnProposal>, vote: bool) -> Result<()> {
         ctx.accounts.vote_on_proposal(vote)?;
+        Ok(())
+    }
+
+    pub fn list_proposal(
+        ctx: Context<ListProposal>,
+        title: String,
+        description: String,
+        expiry_time: i64,
+    ) -> Result<()> {
+        ctx.accounts
+            .list_proposal(title, description, expiry_time)?;
         Ok(())
     }
 }
