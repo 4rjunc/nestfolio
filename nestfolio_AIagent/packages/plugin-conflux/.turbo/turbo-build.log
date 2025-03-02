@@ -1,0 +1,30 @@
+
+
+> @elizaos/plugin-conflux@0.25.6-alpha.1 build /Users/arjunc/Documents/solana/nestfolio/nestfolio_AIagent/packages/plugin-conflux
+> tsup --format esm --dts
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.3.5
+[34mCLI[39m Using tsup config: /Users/arjunc/Documents/solana/nestfolio/nestfolio_AIagent/packages/plugin-conflux/tsup.config.ts
+[34mCLI[39m Target: esnext
+[34mCLI[39m Cleaning output folder
+[34mESM[39m Build start
+DTS Build start
+[32mESM[39m [1mdist/chunk-4L6P6TY5.js         [22m[32m80.02 KB[39m
+[32mESM[39m [1mdist/chunk-2OJMP5IQ.js         [22m[32m160.73 KB[39m
+[32mESM[39m [1mdist/secp256k1-QUTB2QC2.js     [22m[32m237.00 B[39m
+[32mESM[39m [1mdist/_esm-FVHF6KDD.js          [22m[32m130.62 KB[39m
+[32mESM[39m [1mdist/chunk-PR4QN5HX.js         [22m[32m1.87 KB[39m
+[32mESM[39m [1mdist/index.js                  [22m[32m347.85 KB[39m
+[32mESM[39m [1mdist/ccip-Z6D5R2QD.js          [22m[32m290.00 B[39m
+[32mESM[39m [1mdist/chunk-4L6P6TY5.js.map     [22m[32m202.99 KB[39m
+[32mESM[39m [1mdist/chunk-2OJMP5IQ.js.map     [22m[32m411.86 KB[39m
+[32mESM[39m [1mdist/secp256k1-QUTB2QC2.js.map [22m[32m71.00 B[39m
+[32mESM[39m [1mdist/chunk-PR4QN5HX.js.map     [22m[32m71.00 B[39m
+[32mESM[39m [1mdist/_esm-FVHF6KDD.js.map      [22m[32m211.12 KB[39m
+[32mESM[39m [1mdist/ccip-Z6D5R2QD.js.map      [22m[32m71.00 B[39m
+[32mESM[39m [1mdist/index.js.map              [22m[32m1.05 MB[39m
+[32mESM[39m ⚡️ Build success in 894ms
+DTS ⚡️ Build success in 21764ms
+DTS dist/index.d.ts 105.00 B

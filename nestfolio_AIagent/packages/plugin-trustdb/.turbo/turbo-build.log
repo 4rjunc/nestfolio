@@ -1,0 +1,18 @@
+
+
+> @elizaos/plugin-trustdb@0.25.6-alpha.1 build /Users/arjunc/Documents/solana/nestfolio/nestfolio_AIagent/packages/plugin-trustdb
+> tsup --format esm --dts
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m Using tsconfig: tsconfig.json
+[34mCLI[39m tsup v8.3.5
+[34mCLI[39m Using tsup config: /Users/arjunc/Documents/solana/nestfolio/nestfolio_AIagent/packages/plugin-trustdb/tsup.config.ts
+[34mCLI[39m Target: esnext
+[34mCLI[39m Cleaning output folder
+[34mESM[39m Build start
+[32mESM[39m [1mdist/index.js     [22m[32m37.84 KB[39m
+[32mESM[39m [1mdist/index.js.map [22m[32m67.68 KB[39m
+[32mESM[39m ⚡️ Build success in 114ms
+DTS Build start
+DTS ⚡️ Build success in 6618ms
+DTS dist/index.d.ts 10.34 KB
