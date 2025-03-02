@@ -19,4 +19,5 @@ pub struct Organisation {
     pub unlock_timestamp: i64,
     #[max_len(100)]
     pub proposal_list: Vec<Pubkey>,
+    pub treasury_pda: Pubkey,
 }

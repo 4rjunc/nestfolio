@@ -57,8 +57,8 @@ pub mod nestfolio {
         Ok(())
     }
 
-    pub fn withdraw_fund(ctx: Context<WithdrawFund>, amount: u64) -> Result<()> {
-        ctx.accounts.withdraw_fund(amount)?;
+    pub fn withdraw_fund(ctx: Context<WithdrawFund>, amount: u64, bump: u8) -> Result<()> {
+        ctx.accounts.withdraw_fund(amount, bump)?;
         Ok(())
     }
     pub fn create_proposal(
@@ -84,11 +84,6 @@ pub mod nestfolio {
     ) -> Result<()> {
         ctx.accounts
             .list_proposal(title, description, expiry_time)?;
-        Ok(())
-    }
-
-    pub fn distribute_rewards(ctx: Context<DistributeRewards>) -> Result<()> {
-        ctx.accounts.distribute_rewards()?;
         Ok(())
     }
 }
