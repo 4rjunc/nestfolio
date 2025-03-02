@@ -325,3 +325,195 @@ export async function createProposal(title, description, expiryTime) {
     console.error("Stack:", err.stack);
   }
 }
+
+export async function depositFund(){
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), wallet.publicKey.toBuffer()],
+    DAO_PROGRAM_ID
+    );
+
+    const [treasuryAddress, treasuryBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    return treasuryAddress;
+}
+
+export async function airdrop(){
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), wallet.publicKey.toBuffer()],
+    DAO_PROGRAM_ID
+    );
+
+    const [treasuryAddress, treasuryBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+   await provider.connection.confirmTransaction(
+        await provider.connection.requestAirdrop(
+        treasuryAddress,
+        5 * anchor.web3.LAMPORTS_PER_SOL
+      ),
+      "confirmed"
+    );
+
+    const balance = await provider.connection.getBalance(
+      treasuryAddress
+    );
+
+    const balanceInSol =
+      Number(balance) / anchor.web3.LAMPORTS_PER_SOL;
+    console.log(`Balance: ${balanceInSol} SOL`);
+}
+
+export async function getBalance() {
+     const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), wallet.publicKey.toBuffer()],
+    DAO_PROGRAM_ID
+    );
+
+    const [treasuryAddress, treasuryBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const balance = await provider.connection.getBalance(
+      treasuryAddress
+    );
+
+    const balanceInSol =
+      Number(balance) / anchor.web3.LAMPORTS_PER_SOL;
+    return `Balance: ${balanceInSol} SOL`;
+ 
+}
+
+export async function getProposals() {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), wallet.publicKey.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+    const dao = await daoProgram.account.organisation.fetchNullable(daoAddress);
+    if (!dao) {
+      throw new Error("DAO not found!");
+    }
+    
+    let proposalText = `DAO Name: ${dao.name}\n\n`;
+    
+    if (!dao.proposalList || dao.proposalList.length === 0) {
+      proposalText += "No proposals found.";
+      return proposalText;
+    }
+    
+    for (const proposalAddress of dao.proposalList) {
+      const proposal = await daoProgram.account.proposal.fetchNullable(
+        proposalAddress
+      );
+      if (!proposal) continue;
+      
+      proposalText += `📋 Proposal: ${proposal.title}\n`;
+      proposalText += `Description: ${proposal.description}\n`;
+      proposalText += `Proposer: ${proposal.proposer.toBase58()}\n`;
+      proposalText += `Up Votes: ${proposal.upVotes.toString()}\n`;
+      proposalText += `Down Votes: ${proposal.downVotes.toString()}\n`;
+      proposalText += `Status: ${proposal.status}\n`;
+      proposalText += `Expiry: ${new Date(proposal.expiryTime.toNumber() * 1000).toISOString()}\n\n`;
+    }
+    
+    return proposalText;
+}
+
+export async function withdrawFund(amount) {
+  try {
+    // If no amount is provided, default to a small amount for testing
+    const withdrawAmount = amount ? new BN(amount * LAMPORTS_PER_SOL) : new BN(0.1 * LAMPORTS_PER_SOL);
+
+    console.log("withdrawFund, withdrawAmount:", withdrawAmount)
+    
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), keypair.publicKey.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+    
+    const [treasuryAddress, treasuryBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("treasury"), daoAddress.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+    
+    // Check treasury balance first
+    const treasuryBalance = await connection.getBalance(treasuryAddress);
+    const treasuryBalanceInSol = Number(treasuryBalance) / LAMPORTS_PER_SOL;
+    
+    console.log(`Treasury Balance: ${treasuryBalanceInSol} SOL`);
+    
+    // Check if there are sufficient funds
+    if (treasuryBalance < withdrawAmount.toNumber()) {
+      console.log("Insufficient funds in treasury");
+      return `Error: Insufficient funds. Treasury only has ${treasuryBalanceInSol} SOL`;
+    }
+    
+    // Prepend the discriminator for withdrawFund
+    const discriminator = Buffer.from([
+        251,
+        169,
+        221,
+        19,
+        158,
+        53,
+        139,
+        10
+      ]);
+    
+    // Encode the withdrawal amount as a u64 (8 bytes)
+    const amountBuffer = Buffer.alloc(8);
+    withdrawAmount.toArrayLike(Buffer, 'le', 8).copy(amountBuffer);
+    
+    // Encode the treasury bump as a u8 (1 byte)
+    const bumpBuffer = Buffer.alloc(1);
+    bumpBuffer.writeUInt8(treasuryBump, 0);
+    
+    // Combine all parts
+    const completeData = Buffer.concat([discriminator, amountBuffer, bumpBuffer]);
+    
+    console.log("Creating withdrawFund instruction...");
+    const withdrawInstruction = new TransactionInstruction({
+      keys: [
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+        { pubkey: daoAddress, isSigner: false, isWritable: true },
+        { pubkey: treasuryAddress, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
+      ],
+      programId: DAO_PROGRAM_ID,
+      data: completeData
+    });
+    
+    // Create and send transaction
+    console.log(`Sending withdrawal transaction for ${withdrawAmount.toNumber() / LAMPORTS_PER_SOL} SOL...`);
+    const withdrawTransaction = new Transaction().add(withdrawInstruction);
+    const withdrawSignature = await sendAndConfirmTransaction(
+      connection,
+      withdrawTransaction,
+      [keypair]
+    );
+    
+    console.log("Withdrawal transaction successful:", withdrawSignature);
+    console.log("Transaction URL:", `https://explorer.solana.com/tx/${withdrawSignature}?cluster=devnet`);
+    
+    // Get treasury balance after withdrawal
+    const treasuryBalanceAfter = await connection.getBalance(treasuryAddress);
+    const treasuryBalanceAfterInSol = Number(treasuryBalanceAfter) / LAMPORTS_PER_SOL;
+    console.log(`Treasury Balance After Withdrawal: ${treasuryBalanceAfterInSol} SOL`);
+    
+    return `Funds withdrawn successfully. Transaction: ${withdrawSignature}`;
+  } catch (err) {
+    console.error("Error:", err.message);
+    
+    // Parse the error logs for Solana program error
+    if (err.message.includes("insufficient funds")) {
+      return "Error: Insufficient funds in the treasury for this withdrawal.";
+    }
+    
+    return `Error withdrawing funds: ${err.message}`;
+  }
+}
