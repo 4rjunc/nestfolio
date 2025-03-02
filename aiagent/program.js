@@ -98,59 +98,125 @@ export async function initDAO(daoName, registrationFee){
 }
 
 export async function emergencyPause(){
-  try{
+  try {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), keypair.publicKey.toBuffer()],
       DAO_PROGRAM_ID
     );
-
-    const discriminator = Buffer.from([
-        21,
-        143,
-        27,
-        142,
-        200,
-        181,
-        210,
-        255
-      ]);
-
-
-    const pauseTimestamp = Math.floor(Date.now() / 1000) + 3600;
     
-    // 2. Encode the DAO name string
+    // Check if the DAO account exists and is initialized
+    const accountInfo = await connection.getAccountInfo(daoAddress);
+
+    console.log("emergencyPause: ", daoAddress);
+    
+    const pauseDiscriminator = Buffer.from([21, 143, 27, 142, 200, 181, 210, 255]);
+    const pauseTimestamp = Math.floor(Date.now() / 1000) + 3600;
+
     const timestampBuffer = Buffer.alloc(8);
     const timestampBN = new BN(pauseTimestamp);
     timestampBN.toArrayLike(Buffer, 'le', 8).copy(timestampBuffer);
-
-    // 4. Combine all parts
-    const completeData = Buffer.concat([discriminator, timestampBuffer]);
-
+    
+    const pauseData = Buffer.concat([pauseDiscriminator, timestampBuffer]);
+    
     console.log("Creating emergencyPause instruction...");
-    const instruction = new TransactionInstruction({
+    const pauseInstruction = new TransactionInstruction({
       keys: [
-        { pubkey: creator.publicKey, isSigner: true, isWritable: false }, // Assuming creator is authorized to pause
         { pubkey: daoAddress, isSigner: false, isWritable: true }
       ],
       programId: DAO_PROGRAM_ID,
-      data: completeData
+      data: pauseData
     });
-
-    // Create and send transaction
-    console.log("Sending transaction...");
-    const transaction = new Transaction().add(instruction);
-     const signature = await sendAndConfirmTransaction(
-        connection,
-        transaction,
-        [creator]
-      );
-
-      console.log("Emergency pause transaction successful:", signature);
-      console.log("Transaction URL:", `https://explorer.solana.com/tx/${signature}?cluster=devnet`);
-
+    
+    console.log("Sending emergency pause transaction...");
+    const pauseTx = new Transaction().add(pauseInstruction);
+    
+    const signature = await sendAndConfirmTransaction(
+      connection,
+      pauseTx,
+      [keypair]
+    );
+    
+    console.log("Emergency pause transaction successful:", signature);
+    console.log("Pause Transaction URL:", `https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+    
     return signature;
   } catch (err) {
     console.error("Error:", err.message);
+    if (err.logs) {
+      console.error("Logs:", err.logs);
+    } else if (err.getLogs) {
+      try {
+        const logs = await err.getLogs();
+        console.error("Logs:", logs);
+      } catch (logErr) {
+        console.error("Failed to retrieve logs");
+      }
+    }
     console.error("Stack:", err.stack);
+    throw err;
+  }
+}
+
+export async function resumeOperations(){
+  try {
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), keypair.publicKey.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+    
+    // Check if the DAO account exists and is initialized
+    const accountInfo = await connection.getAccountInfo(daoAddress);
+
+    console.log("resumeOperations: ", daoAddress);
+    
+    const pauseDiscriminator = Buffer.from([
+        240,
+        141,
+        133,
+        154,
+        232,
+        15,
+        166,
+        157
+      ]);
+    
+    const resumeData = Buffer.concat([pauseDiscriminator]);
+    
+    console.log("Creating resume instruction...");
+    const pauseInstruction = new TransactionInstruction({
+      keys: [
+        { pubkey: daoAddress, isSigner: false, isWritable: true }
+      ],
+      programId: DAO_PROGRAM_ID,
+      data: resumeData
+    });
+    
+    console.log("Sending emergency pause transaction...");
+    const pauseTx = new Transaction().add(pauseInstruction);
+    
+    const signature = await sendAndConfirmTransaction(
+      connection,
+      pauseTx,
+      [keypair]
+    );
+    
+    console.log("Emergency resume transaction successful:", signature);
+    console.log("Pause Transaction URL:", `https://explorer.solana.com/tx/${signature}?cluster=devnet`);
+    
+    return signature;
+  } catch (err) {
+    console.error("Error:", err.message);
+    if (err.logs) {
+      console.error("Logs:", err.logs);
+    } else if (err.getLogs) {
+      try {
+        const logs = await err.getLogs();
+        console.error("Logs:", logs);
+      } catch (logErr) {
+        console.error("Failed to retrieve logs");
+      }
+    }
+    console.error("Stack:", err.stack);
+    throw err;
   }
 }
