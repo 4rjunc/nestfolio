@@ -1,7 +1,7 @@
 import { Bot, GrammyError, HttpError } from "grammy";
 import 'dotenv/config'
 import { initDAO, emergencyPause, resumeOperations, createProposal } from './program.js'; 
-import { analyzeDAOInit } from "./prompt.js"
+import { analyzeDAOInit, analyzeProposal } from "./prompt.js"
 
 const token = process.env.BOT_API_KEY;
 const bot = new Bot(token); 
@@ -33,7 +33,9 @@ bot.command("DAOresume", async (ctx) => {
 bot.command("createProposal", async (ctx) => {
   console.log("ctx", ctx)
   const message = ctx.match; 
-  const tx = await createProposal("apple", "buy apple", 1821246480);
+  const proposalJSON = await analyzeProposal(message)
+  console.log("proposalJSON", proposalJSON)
+  const tx = await createProposal(proposalJSON.title, proposalJSON.description, proposalJSON.deadline);
   ctx.reply(`DAO create proposal: ${tx}`);
 });
 
