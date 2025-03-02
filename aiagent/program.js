@@ -1,13 +1,20 @@
-import { BankrunProvider, startAnchor } from "anchor-bankrun";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Keypair, PublicKey, SystemProgram, TransactionInstruction, Transaction, sendAndConfirmTransaction, Connection, LAMPORTS_PER_SOL } from "@solana/web3.js";
 //import { Nestfolio } from "./nestfolio.json";
 import { expect } from "chai";
-import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
+import { 
+  TOKEN_PROGRAM_ID, 
+  ASSOCIATED_TOKEN_PROGRAM_ID, 
+  getAssociatedTokenAddress,
+  getAccount
+} from '@solana/spl-token';
 import { SYSTEM_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/native/system.js";
 import * as fs from "fs"
 import {BN} from "bn.js"
+
+// Rent program ID
+const RENT_PROGRAM_ID = new PublicKey('SysvarRent111111111111111111111111111111111');
 
 //const IDL = JSON.parse(fs.readFileSync("./nestfolio.json", "utf-8"))
 
@@ -19,6 +26,11 @@ const keypairFile = "./wallet.json"
 const secretKey = Uint8Array.from(JSON.parse(fs.readFileSync(keypairFile)))
 const keypair = anchor.web3.Keypair.fromSecretKey(secretKey)
 const wallet = new anchor.Wallet(keypair)
+
+const member = "./wallet2.json"
+const memberSecretKey = Uint8Array.from(JSON.parse(fs.readFileSync(member)))
+const memberKeypair = anchor.web3.Keypair.fromSecretKey(memberSecretKey)
+const memberWallet = new anchor.Wallet(memberKeypair)
 
 const local = "http://127.0.0.1:8899"
 const devnet = "https://api.devnet.solana.com"
@@ -218,5 +230,98 @@ export async function resumeOperations(){
     }
     console.error("Stack:", err.stack);
     throw err;
+  }
+}
+
+export async function createProposal(title, description, expiryTime) {
+  console.log("title", title, "description", description, "expiryTime", expiryTime);
+
+  try {
+
+    const [daoAddress] = PublicKey.findProgramAddressSync(
+      [Buffer.from("organization"), keypair.publicKey.toBuffer()],
+      DAO_PROGRAM_ID
+    );
+
+    const daoAccountInfo = await connection.getAccountInfo(daoAddress);
+    if (!daoAccountInfo) {
+      throw new Error(`DAO account ${daoAddress.toString()} does not exist. Initialize the DAO first.`);
+    }
+
+    const [proposalAddress] = PublicKey.findProgramAddressSync(
+      [
+        Buffer.from("proposal"),
+        keypair.publicKey.toBuffer(),
+        daoAddress.toBuffer(),
+        Buffer.from(title),
+      ],
+      DAO_PROGRAM_ID
+    );
+    
+    // Prepend the discriminator
+    const instructionDiscriminator = Buffer.from([
+        132,
+        116,
+        68,
+        174,
+        216,
+        160,
+        198,
+        22
+      ]); 
+    // This would be your proposal's discriminator
+    
+    // Encode the title
+    const titleData = Buffer.alloc(4 + title.length);
+    titleData.writeUInt32LE(title.length, 0);
+    Buffer.from(title).copy(titleData, 4);
+    
+    // Encode the description
+    const descriptionData = Buffer.alloc(4 + description.length);
+    descriptionData.writeUInt32LE(description.length, 0);
+    Buffer.from(description).copy(descriptionData, 4);
+    
+    // Encode the expiry time (i64)
+    const expiryData = Buffer.alloc(8);
+    new BN(expiryTime).toArrayLike(Buffer, 'le', 8).copy(expiryData);
+    
+    // Combine all the data
+    const data = Buffer.concat([
+      instructionDiscriminator,
+      titleData,
+      descriptionData,
+      expiryData
+    ]);    
+
+    console.log("Creating createProposal instruction...", daoAddress, proposalAddress);
+
+    const proposalInstruction = new TransactionInstruction({
+      keys: [
+        { pubkey: keypair.publicKey, isSigner: true, isWritable: true },
+        { pubkey: proposalAddress, isSigner: false, isWritable: true },
+        { pubkey: daoAddress, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }
+      ],
+      programId: DAO_PROGRAM_ID,
+      data
+    });    
+
+    // Create and send transaction
+    console.log("Sending transaction...");
+    const proposalTransaction = new Transaction().add(proposalInstruction);
+    const proposalSignature = await sendAndConfirmTransaction(
+      connection,
+      proposalTransaction,
+      [keypair],
+      { commitment: 'confirmed' }
+    );
+    
+    console.log("Transaction successful:", proposalSignature);
+    console.log("Transaction URL:", `https://explorer.solana.com/tx/${proposalSignature}?cluster=devnet`);
+    
+    return proposalAddress;
+  } catch (err) {
+    console.error("Error:", err.message);
+    console.error("Stack:", err.stack);
   }
 }

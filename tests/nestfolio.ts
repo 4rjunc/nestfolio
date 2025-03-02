@@ -246,6 +246,7 @@ describe("DAO Initialization", () => {
     expect(tokenAccount.amount.toString()).to.equal("1");
     console.log("NFT Minted Successfully!");
   });
+
   it("Should create a proposal", async () => {
     const [daoAddress] = PublicKey.findProgramAddressSync(
       [Buffer.from("organization"), creator.toBuffer()],

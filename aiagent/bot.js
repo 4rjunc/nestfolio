@@ -1,6 +1,6 @@
-import { Bot } from "grammy";
+import { Bot, GrammyError, HttpError } from "grammy";
 import 'dotenv/config'
-import { initDAO, emergencyPause, resumeOperations } from './program.js'; 
+import { initDAO, emergencyPause, resumeOperations, createProposal } from './program.js'; 
 import { analyzeDAOInit } from "./prompt.js"
 
 const token = process.env.BOT_API_KEY;
@@ -30,11 +30,13 @@ bot.command("DAOresume", async (ctx) => {
   ctx.reply(`DAO emergency pause: ${tx}`);
 });
 
-// Commands
-//await bot.api.setMyCommands([
-//  { command: "start", description: "Start the bot" },
-//  { command: "createDAO", description: "To Create DAO" },
-//]);
+bot.command("createProposal", async (ctx) => {
+  console.log("ctx", ctx)
+  const message = ctx.match; 
+  const tx = await createProposal("apple", "buy apple", 1821246480);
+  ctx.reply(`DAO create proposal: ${tx}`);
+});
+
 
 bot.catch((err) => {
   const ctx = err.ctx;
