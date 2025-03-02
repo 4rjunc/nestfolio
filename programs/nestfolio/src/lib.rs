@@ -51,8 +51,9 @@ pub mod nestfolio {
         Ok(())
     }
 
-    pub fn deposit_fund(ctx: Context<DepositFund>, amount: u64) -> Result<()> {
-        ctx.accounts.deposit_fund(amount)?;
+    pub fn deposit_fund(ctx: Context<DepositFund>, amount: u64, bump: u8) -> Result<()> {
+        // let bump = *ctx.bumps.get("treasury").unwrap();
+        ctx.accounts.deposit_fund(amount, bump)?;
         Ok(())
     }
 
