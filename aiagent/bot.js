@@ -5,6 +5,7 @@
 import { Bot, GrammyError, HttpError } from "grammy";
 import { InlineKeyboard, Keyboard } from "grammy";
 import { Keypair } from "@solana/web3.js";
+import { createClient } from "@supabase/supabase-js";
 import "dotenv/config";
 import {
   initDAO,
@@ -17,6 +18,53 @@ import {
   withdrawFund,
 } from "./program.js";
 import { analyzeDAOInit, analyzeProposal } from "./prompt.js";
+
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Helper functions for wallet management
+async function saveWallet(username, publicKey, privateKey) {
+  const { data, error } = await supabase
+    .from('nestfolio')
+    .upsert({
+      telegram_username: username,
+      public_key: publicKey,
+      private_key: privateKey,
+      created_at: new Date()
+    });
+
+  if (error) throw new Error(`Failed to save wallet: ${error.message}`);
+  return data;
+}
+
+async function getWallet(username) {
+  const { data, error } = await supabase
+    .from('nestfolio')
+    .select('*')
+    .eq('telegram_username', username)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') { // No rows returned
+      return null;
+    }
+    throw new Error(`Failed to fetch wallet: ${error.message}`);
+  }
+  return data;
+}
+
+async function loadKeypairFromPrivateKey(privateKeyHex) {
+  const secretKey = Buffer.from(privateKeyHex, 'hex');
+  return Keypair.fromSecretKey(secretKey);
+}
+
+async function getUserKeypair(username) {
+  const walletData = await getWallet(username);
+  if (!walletData) return null;
+  return loadKeypairFromPrivateKey(walletData.private_key);
+}
 
 export function startBot() {
   const token = process.env.BOT_API_KEY;
@@ -33,12 +81,30 @@ export function startBot() {
 
     // Create account command handler
     async createAccount(ctx) {
+      const username = ctx.from.username;
+      console.log("username", username)
+      const existingWallet = await getWallet(username);
+
+      if (existingWallet) {
+        return ctx.reply(
+          `You already have a wallet!\n\n` +
+          `📬 Public Address: ${existingWallet.public_key}\n\n` +
+          `⚠️ If you need a new wallet, please contact support.`,
+          {
+            reply_markup: mainKeyboard
+          }
+        );
+      }
+
       const keypair = Keypair.generate();
       const publicKey = keypair.publicKey.toString();
       const privateKey = Buffer.from(keypair.secretKey).toString('hex');
 
+      // Save to Supabase
+      await saveWallet(username, publicKey, privateKey);
+
       return ctx.reply(
-        `🔑 New Solana Wallet Created!\n\n` +
+        `🔑 New Solana Wallet Created and Linked to Your Account!\n\n` +
         `📬 Public Address: ${publicKey}\n\n` +
         `🔐 Private Key: ${privateKey}\n\n` +
         `⚠️ IMPORTANT: Save your private key securely and never share it with anyone!`,
