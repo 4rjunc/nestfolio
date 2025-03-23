@@ -75,7 +75,14 @@ export function startBot() {
 
     // Balance command handler
     async balance(ctx) {
-      const result = await getBalance();
+      const username = ctx.from.username;
+      const keypair = await getUserKeypair(username);
+
+      if (!keypair) {
+        return ctx.reply("You don't have a wallet yet. Create one using /createAccount");
+      }
+
+      const result = await getBalance(keypair);
       return ctx.reply(`${result}`);
     },
 
@@ -116,11 +123,18 @@ export function startBot() {
 
     // Deposit command handler
     async deposit(ctx) {
-      const address = await depositFund();
-      return ctx.reply(`Deposit Funds Here: ${address}`);
+      const username = ctx.from.username;
+      const keypair = await getUserKeypair(username);
+
+      if (!keypair) {
+        return ctx.reply("You don't have a wallet yet. Create one using /createAccount");
+      }
+
+      const address = await depositFund(keypair);
+      return ctx.reply(`Deposit Funds Here: ${address || walletData.public_key}`);
     },
 
-    // Withdraw command handler
+    // Withdraw command handler // HOLD
     async withdraw(ctx) {
       try {
         const tx = await withdrawFund(0.1);
@@ -132,10 +146,21 @@ export function startBot() {
 
     // Create DAO command handler (with parameters)
     async createDAO(ctx) {
+      const username = ctx.from.username;
+      const keypair = await getUserKeypair(username);
+
+      if (!keypair) {
+        return ctx.reply("You don't have a wallet yet. Create one using /createAccount");
+      }
+
+      const dummyKeypair = "2RV4rBmkuF91QtEiJttMVBkZdYQbqzakMUzunxCsvn3p3Esae78fXD7DebsRtKaVDLa1fzWocFjJzHLarQ3yi6ge"
+
       if (ctx.match) {
         const daoInitMsg = ctx.match;
         const daoInitJSON = await analyzeDAOInit(daoInitMsg);
         const daoAddress = await initDAO(
+          dummyKeypair,
+          //keypair,
           daoInitJSON.daoName,
           daoInitJSON.registrationFee
         );
@@ -144,7 +169,6 @@ export function startBot() {
         return ctx.reply("Please use the command: /createDAO [name] [fee]");
       }
     },
-
     // Create proposal command handler (with parameters)
     async createProposal(ctx) {
       if (ctx.match) {
