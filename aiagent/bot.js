@@ -79,7 +79,7 @@ export function startBot() {
       const keypair = await getUserKeypair(username);
 
       if (!keypair) {
-        return ctx.reply("You don't have a wallet yet. Create one using /createAccount");
+        return ctx.reply("You don't have a wallet yet. Create one using /create-account");
       }
 
       const result = await getBalance(keypair);
@@ -87,7 +87,7 @@ export function startBot() {
     },
 
     // Create account command handler
-    async createAccount(ctx) {
+    async "create-account"(ctx) {
       const username = ctx.from.username;
       console.log("username", username)
       const existingWallet = await getWallet(username);
@@ -127,7 +127,7 @@ export function startBot() {
       const keypair = await getUserKeypair(username);
 
       if (!keypair) {
-        return ctx.reply("You don't have a wallet yet. Create one using /createAccount");
+        return ctx.reply("You don't have a wallet yet. Create one using /create-account");
       }
 
       const address = await depositFund(keypair);
@@ -145,12 +145,12 @@ export function startBot() {
     },
 
     // Create DAO command handler (with parameters)
-    async createDAO(ctx) {
+    async "create-dao"(ctx) {
       const username = ctx.from.username;
       const keypair = await getUserKeypair(username);
 
       if (!keypair) {
-        return ctx.reply("You don't have a wallet yet. Create one using /createAccount");
+        return ctx.reply("You don't have a wallet yet. Create one using /create-account");
       }
 
       const dummyKeypair = "2RV4rBmkuF91QtEiJttMVBkZdYQbqzakMUzunxCsvn3p3Esae78fXD7DebsRtKaVDLa1fzWocFjJzHLarQ3yi6ge"
@@ -166,11 +166,11 @@ export function startBot() {
         );
         return ctx.reply(`DAO initialized at address: ${daoAddress}`);
       } else {
-        return ctx.reply("Please use the command: /createDAO [name] [fee]");
+        return ctx.reply("Please use the command: /create-dao [name] [fee]");
       }
     },
     // Create proposal command handler (with parameters)
-    async createProposal(ctx) {
+    async "create-proposal"(ctx) {
       if (ctx.match) {
         const message = ctx.match;
         const proposalJSON = await analyzeProposal(message);
@@ -181,18 +181,18 @@ export function startBot() {
         );
         return ctx.reply(`DAO create proposal: ${tx}`);
       } else {
-        return ctx.reply("Please use the command: /createProposal [details]");
+        return ctx.reply("Please use the command: /create-proposal [details]");
       }
     },
 
     // Pause DAO command handler
-    async pauseDAO(ctx) {
+    async "pause-dao"(ctx) {
       const tx = await emergencyPause();
       return ctx.reply(`DAO emergency pause: ${tx}`);
     },
 
     // Resume DAO command handler
-    async resumeDAO(ctx) {
+    async "resume-dao"(ctx) {
       const tx = await resumeOperations();
       return ctx.reply(`DAO operations resumed: ${tx}`);
     },
@@ -207,29 +207,29 @@ export function startBot() {
   // Define mapping between button text and command handlers
   const textToCommandMap = {
     "💰 Check Balance": "balance",
-    "🔑 Create Account": "createAccount",
+    "🔑 Create Account": "create-account",
     "💸 Deposit": "deposit",
     "📤 Withdraw": "withdraw",
-    "🚀 Create DAO": "createDAO",
-    "📝 Create Proposal": "createProposal",
-    "⏸️ Pause DAO": "pauseDAO",
-    "▶️ Resume DAO": "resumeDAO",
+    "🚀 Create DAO": "create-dao",
+    "📝 Create Proposal": "create-proposal",
+    "⏸️ Pause DAO": "pause-dao",
+    "▶️ Resume DAO": "resume-dao",
     "🪂 Airdrop": "airdrop"
   };
 
   // Create inline keyboard for message buttons
   const mainInlineKeyboard = new InlineKeyboard()
     .text("💰 Check Balance", "balance")
-    .text("🔑 Create Account", "createAccount")
+    .text("🔑 Create Account", "create-account")
     .row()
     .text("💸 Deposit", "deposit")
     .text("📤 Withdraw", "withdraw")
     .row()
-    .text("🚀 Create DAO", "createDAO")
-    .text("📝 Create Proposal", "createProposal")
+    .text("🚀 Create DAO", "create-dao")
+    .text("📝 Create Proposal", "create-proposal")
     .row()
-    .text("⏸️ Pause DAO", "pauseDAO")
-    .text("▶️ Resume DAO", "resumeDAO")
+    .text("⏸️ Pause DAO", "pause-dao")
+    .text("▶️ Resume DAO", "resume-dao")
     .row()
     .text("🪂 Airdrop", "airdrop");
 
@@ -250,16 +250,16 @@ export function startBot() {
     // First send welcome message with inline keyboard
     await ctx.reply(
       "Welcome to the Nestfolio Bot! You can use the buttons below or these commands:\n\n" +
-      "/createDAO [parameters] - Initialize a new DAO with name and registration fee\n" +
-      "/createProposal [details] - Create a new proposal with title, description and deadline\n" +
-      "/pauseDAO - Emergency pause of DAO operations\n" +
-      "/resumeDAO - Resume DAO operations after pause\n" +
+      "/create-dao [parameters] - Initialize a new DAO with name and registration fee\n" +
+      "/create-proposal [details] - Create a new proposal with title, description and deadline\n" +
+      "/pause-dao - Emergency pause of DAO operations\n" +
+      "/resume-dao - Resume DAO operations after pause\n" +
       "/deposit - Get address to deposit funds\n" +
       "/withdraw - Withdraw funds from the DAO\n" +
       "/airdrop - Trigger token airdrop\n" +
       "/balance - Check current DAO balance\n" +
-      "/createAccount - Create a new Solana wallet\n\n" +
-      "To get started, try creating a DAO with /createDAO [name] [fee]",
+      "/create-account - Create a new Solana wallet\n\n" +
+      "To get started, try creating a DAO with /create-dao [name] [fee]",
       {
         reply_markup: mainInlineKeyboard
       }
@@ -293,8 +293,13 @@ export function startBot() {
   });
 
   // Backward compatibility for old command names
-  bot.command("DAOpause", (ctx) => commandHandlers.pauseDAO(ctx));
-  bot.command("DAOresume", (ctx) => commandHandlers.resumeDAO(ctx));
+  bot.command("createDAO", (ctx) => commandHandlers["create-dao"](ctx));
+  bot.command("createAccount", (ctx) => commandHandlers["create-account"](ctx));
+  bot.command("createProposal", (ctx) => commandHandlers["create-proposal"](ctx));
+  bot.command("pauseDAO", (ctx) => commandHandlers["pause-dao"](ctx));
+  bot.command("resumeDAO", (ctx) => commandHandlers["resume-dao"](ctx));
+  bot.command("DAOpause", (ctx) => commandHandlers["pause-dao"](ctx));
+  bot.command("DAOresume", (ctx) => commandHandlers["resume-dao"](ctx));
 
   bot.catch((err) => {
     const ctx = err.ctx;
