@@ -1,3 +1,7 @@
+// 1. Streamline command handlers : DONE 80%
+// 2. Add supabase to store the wallet keys : telegram username , So when a user starts to interact with the Nestfolio bot. The wallet linked to the user name will be loaded and used for actions
+// Rewrite the client code, since the code rn is shit and unable to understand. 
+
 import { Bot, GrammyError, HttpError } from "grammy";
 import { InlineKeyboard, Keyboard } from "grammy";
 import { Keypair } from "@solana/web3.js";
