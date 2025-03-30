@@ -70,7 +70,7 @@ export async function initDAO(secretKeyStr, daoName, registrationFee) {
     );
 
     const tx = await daoProgram.methods
-      .initializeOrganization(daoName, new BN(registrationFee))
+      .initializeOrganization(daoName, new BN(registrationFee * LAMPORTS_PER_SOL))
       .rpc();
 
     console.log("initDAO transaction: ", tx);
@@ -251,99 +251,124 @@ export async function resumeOperations(secretKeyStr) {
   }
 }
 
-export async function createProposal(keypair, title, description, expiryTime) {
-  console.log(
-    "title",
-    title,
-    "description",
-    description,
-    "expiryTime",
-    expiryTime
-  );
-
+export async function createProposal(secretKeyStr, title, description, expiryTime, DAOAddress) {
   try {
-    const wallet = new anchor.Wallet(keypair);
+
+    // here wallet will be of a different user not the creator of the DAO
+    const wallet = new anchor.Wallet(secretKeyStr);
     const provider = createProvider(wallet);
     anchor.setProvider(provider);
-    const daoProgram = new anchor.Program < Nestfolio > (IDL, provider);
+    const daoProgram = new anchor.Program(IDL, provider);
 
-    const [daoAddress] = PublicKey.findProgramAddressSync(
-      [Buffer.from("organization"), keypair.publicKey.toBuffer()],
-      DAO_PROGRAM_ID
-    );
+    //const [daoAddress] = PublicKey.findProgramAddressSync(
+    //  [Buffer.from("organization"), wallet.publicKey.toBuffer()],
+    //  DAO_PROGRAM_ID
+    //);
 
-    const daoAccountInfo = await connection.getAccountInfo(daoAddress);
-    if (!daoAccountInfo) {
-      throw new Error(
-        `DAO account ${daoAddress.toString()} does not exist. Initialize the DAO first.`
-      );
-    }
+    const daoAddress = new PublicKey(DAOAddress);
 
     const [proposalAddress] = PublicKey.findProgramAddressSync(
       [
         Buffer.from("proposal"),
-        keypair.publicKey.toBuffer(),
+        wallet.publicKey.toBuffer(),
         daoAddress.toBuffer(),
-        Buffer.from(title),
+        Buffer.from("Buy a new laptop"),
       ],
       DAO_PROGRAM_ID
     );
 
-    const instructionDiscriminator = Buffer.from([
-      132, 116, 68, 174, 216, 160, 198, 22,
-    ]);
+    console.log("proposalAddress", proposalAddress, "daoAddress", daoAddress)
+    await daoProgram.methods
+      .createProposal(
+        title,
+        description,
+        new BN(expiryTime)
+      )
+      .accounts({
+        proposer: wallet.publicKey,
+        organization: daoAddress,
+        proposal: proposalAddress,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc();
 
-    const titleData = Buffer.alloc(4 + title.length);
-    titleData.writeUInt32LE(title.length, 0);
-    Buffer.from(title).copy(titleData, 4);
-
-    const descriptionData = Buffer.alloc(4 + description.length);
-    descriptionData.writeUInt32LE(description.length, 0);
-    Buffer.from(description).copy(descriptionData, 4);
-
-    const expiryData = Buffer.alloc(8);
-    new BN(expiryTime).toArrayLike(Buffer, "le", 8).copy(expiryData);
-
-    const data = Buffer.concat([
-      instructionDiscriminator,
-      titleData,
-      descriptionData,
-      expiryData,
-    ]);
-
-    console.log(
-      "Creating createProposal instruction...",
-      daoAddress,
-      proposalAddress
-    );
-
-    const proposalInstruction = new TransactionInstruction({
-      keys: [
-        { pubkey: keypair.publicKey, isSigner: true, isWritable: true },
-        { pubkey: proposalAddress, isSigner: false, isWritable: true },
-        { pubkey: daoAddress, isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      programId: DAO_PROGRAM_ID,
-      data,
-    });
-
-    console.log("Sending transaction...");
-    const proposalTransaction = new Transaction().add(proposalInstruction);
-    const proposalSignature = await sendAndConfirmTransaction(
-      connection,
-      proposalTransaction,
-      [keypair],
-      { commitment: "confirmed" }
-    );
-
-    console.log("Transaction successful:", proposalSignature);
-    console.log(
-      "Transaction URL:",
-      `https://explorer.solana.com/tx/${proposalSignature}?cluster=devnet`
-    );
+    const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
+    console.log("Proposal created successfully:", proposal);
 
     return proposalAddress;
+
+    //const daoAccountInfo = await connection.getAccountInfo(daoAddress);
+    //if (!daoAccountInfo) {
+    //  throw new Error(
+    //    `DAO account ${daoAddress.toString()} does not exist. Initialize the DAO first.`
+    //  );
+    //}
+    //
+    //const [proposalAddress] = PublicKey.findProgramAddressSync(
+    //  [
+    //    Buffer.from("proposal"),
+    //    keypair.publicKey.toBuffer(),
+    //    daoAddress.toBuffer(),
+    //    Buffer.from(title),
+    //  ],
+    //  DAO_PROGRAM_ID
+    //);
+    //
+    //const instructionDiscriminator = Buffer.from([
+    //  132, 116, 68, 174, 216, 160, 198, 22,
+    //]);
+    //
+    //const titleData = Buffer.alloc(4 + title.length);
+    //titleData.writeUInt32LE(title.length, 0);
+    //Buffer.from(title).copy(titleData, 4);
+    //
+    //const descriptionData = Buffer.alloc(4 + description.length);
+    //descriptionData.writeUInt32LE(description.length, 0);
+    //Buffer.from(description).copy(descriptionData, 4);
+    //
+    //const expiryData = Buffer.alloc(8);
+    //new BN(expiryTime).toArrayLike(Buffer, "le", 8).copy(expiryData);
+    //
+    //const data = Buffer.concat([
+    //  instructionDiscriminator,
+    //  titleData,
+    //  descriptionData,
+    //  expiryData,
+    //]);
+    //
+    //console.log(
+    //  "Creating createProposal instruction...",
+    //  daoAddress,
+    //  proposalAddress
+    //);
+    //
+    //const proposalInstruction = new TransactionInstruction({
+    //  keys: [
+    //    { pubkey: keypair.publicKey, isSigner: true, isWritable: true },
+    //    { pubkey: proposalAddress, isSigner: false, isWritable: true },
+    //    { pubkey: daoAddress, isSigner: false, isWritable: true },
+    //    { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    //  ],
+    //  programId: DAO_PROGRAM_ID,
+    //  data,
+    //});
+    //
+    //console.log("Sending transaction...");
+    //const proposalTransaction = new Transaction().add(proposalInstruction);
+    //const proposalSignature = await sendAndConfirmTransaction(
+    //  connection,
+    //  proposalTransaction,
+    //  [keypair],
+    //  { commitment: "confirmed" }
+    //);
+    //
+    //console.log("Transaction successful:", proposalSignature);
+    //console.log(
+    //  "Transaction URL:",
+    //  `https://explorer.solana.com/tx/${proposalSignature}?cluster=devnet`
+    //);
+    //
+    //return proposalAddress;
   } catch (err) {
     console.error("Error:", err.message);
     console.error("Stack:", err.stack);
@@ -424,7 +449,7 @@ export async function getBalance(secretKeyStr) {
       DAO_PROGRAM_ID
     );
 
-    const balance = await provider.connection.getBalance(treasuryAddress);
+    const balance = await provider.connection.getBalance(wallet.publicKey);
     const balanceInSol = Number(balance) / anchor.web3.LAMPORTS_PER_SOL;
 
     return `Balance: ${balanceInSol} SOL`;
