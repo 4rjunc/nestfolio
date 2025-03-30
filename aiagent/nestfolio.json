@@ -1,5 +1,5 @@
 {
-  "address": "FXvTKSj5SXeRvaKqGxVc97pekvqN77btHBoZ4Qsn9iZX",
+  "address": "DsuyobFDVzaNeQjwLvxSL2efU7eX6W1nBHZQv5Y7dB6E",
   "metadata": {
     "name": "nestfolio",
     "version": "0.1.0",
@@ -59,7 +59,8 @@
           }
         },
         {
-          "name": "organization"
+          "name": "organization",
+          "writable": true
         },
         {
           "name": "system_program",
@@ -100,11 +101,14 @@
           "signer": true
         },
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         },
         {
-          "name": "treasury",
+          "name": "treasury_pda",
+          "docs": [
+            "CHECK"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -123,7 +127,7 @@
               },
               {
                 "kind": "account",
-                "path": "organisation"
+                "path": "organization"
               }
             ]
           }
@@ -137,6 +141,10 @@
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "bump",
+          "type": "u8"
         }
       ]
     },
@@ -154,7 +162,7 @@
       ],
       "accounts": [
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         }
       ],
@@ -365,7 +373,7 @@
           "signer": true
         },
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true,
           "pda": {
             "seeds": [
@@ -410,6 +418,73 @@
       ]
     },
     {
+      "name": "list_proposal",
+      "discriminator": [
+        134,
+        224,
+        243,
+        174,
+        42,
+        55,
+        4,
+        7
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              }
+            ]
+          },
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "proposal"
+        }
+      ],
+      "args": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "expiry_time",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "resume_operations",
       "discriminator": [
         240,
@@ -423,7 +498,7 @@
       ],
       "accounts": [
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         }
       ],
@@ -443,7 +518,7 @@
       ],
       "accounts": [
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         }
       ],
@@ -629,16 +704,20 @@
       ],
       "accounts": [
         {
-          "name": "member",
+          "name": "signer",
           "writable": true,
           "signer": true
         },
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         },
         {
-          "name": "treasury",
+          "name": "treasury_pda",
+          "docs": [
+            "CHECK"
+          ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -656,7 +735,7 @@
               },
               {
                 "kind": "account",
-                "path": "organisation"
+                "path": "organization"
               }
             ]
           }
@@ -670,6 +749,10 @@
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "bump",
+          "type": "u8"
         }
       ]
     }
@@ -712,19 +795,6 @@
         136,
         53,
         33
-      ]
-    },
-    {
-      "name": "Treasury",
-      "discriminator": [
-        238,
-        239,
-        123,
-        238,
-        89,
-        1,
-        168,
-        253
       ]
     }
   ],
@@ -833,6 +903,26 @@
       "code": 6020,
       "name": "VotingNotAllowed",
       "msg": "VotingNotAllowed: The user is not allowed to vote on this proposal."
+    },
+    {
+      "code": 6021,
+      "name": "MemberNotActive",
+      "msg": "MemberNotActive: The user is not active."
+    },
+    {
+      "code": 6022,
+      "name": "CannotDelegateToSelf",
+      "msg": "Cannot delegate vote to self."
+    },
+    {
+      "code": 6023,
+      "name": "AlreadyDelegated",
+      "msg": "Vote has already been delegated."
+    },
+    {
+      "code": 6024,
+      "name": "InvalidOrganization",
+      "msg": "Member does not belong to this organization."
     }
   ],
   "types": [
@@ -864,6 +954,16 @@
           {
             "name": "member_bump",
             "type": "u8"
+          },
+          {
+            "name": "delegate",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "is_active",
+            "type": "bool"
           }
         ]
       }
@@ -924,6 +1024,16 @@
           {
             "name": "unlock_timestamp",
             "type": "i64"
+          },
+          {
+            "name": "proposal_list",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "treasury_pda",
+            "type": "pubkey"
           }
         ]
       }
@@ -989,26 +1099,6 @@
           },
           {
             "name": "Rejected"
-          }
-        ]
-      }
-    },
-    {
-      "name": "Treasury",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "admin",
-            "type": "pubkey"
           }
         ]
       }

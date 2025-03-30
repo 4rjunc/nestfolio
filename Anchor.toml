@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-nestfolio = "FmvHXQmUhsY1SYmQgysUC3wJjM4JQCsGHwHnsfw1YDUs"
+nestfolio = "DsuyobFDVzaNeQjwLvxSL2efU7eX6W1nBHZQv5Y7dB6E"
 
 [registry]
 url = "https://api.apr.dev"

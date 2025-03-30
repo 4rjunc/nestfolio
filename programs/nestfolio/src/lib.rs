@@ -7,7 +7,7 @@ use crate::instructions::*;
 
 mod error;
 
-declare_id!("FmvHXQmUhsY1SYmQgysUC3wJjM4JQCsGHwHnsfw1YDUs");
+declare_id!("DsuyobFDVzaNeQjwLvxSL2efU7eX6W1nBHZQv5Y7dB6E");
 
 #[program]
 pub mod nestfolio {

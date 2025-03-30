@@ -74,6 +74,7 @@ export async function analyzeProposal(proposalText) {
           - title: The title or name of the proposal
           - description: A brief description of what the proposal is about
           - deadline: The deadline date converted to a UNIX timestamp (in seconds)
+          - DAOaddress: The dao address passed in message
           
           Proposal Text: ${proposalText}`,
         },
