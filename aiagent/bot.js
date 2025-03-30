@@ -1,7 +1,7 @@
 // 1. Streamline command handlers : DONE 80%
 // 2. Add supabase to store the wallet keys : telegram username , So when a user starts to interact with the Nestfolio bot. The wallet linked to the user name will be loaded and used for actions
-// 2.1 DAO - Create Wallet✅, Create DAO✅ (Store DAO data in DB ❌), pause-dao ✅. resume-dao ✅
-// 2.2 User - Create Wallet✅, Register as Member on a DAO, Create Proposal 
+// 2.1 DAO - Create Wallet✅, Create DAO✅ (Store DAO data in DB ❌), pause-dao ✅. resume-dao ✅, Check balance ✅
+// 2.2 User - Create Wallet✅, Register as Member on a DAO ✅, Create Proposal✅ 
 // 3.Rewrite the client code, since the code rn is shit and unable to understand. 
 
 import { Bot, GrammyError, HttpError } from "grammy";
@@ -18,18 +18,12 @@ import {
   airdrop,
   getBalance,
   withdrawFund,
+  registerMember
 } from "./program.js";
 import { analyzeDAOInit, analyzeProposal } from "./prompt.js";
 
 
-const dummyKeypair = [
-  133, 1, 245, 20, 13, 87, 206, 247, 177, 252, 67,
-  139, 23, 163, 97, 83, 233, 148, 234, 93, 137, 83,
-  191, 68, 99, 197, 162, 202, 210, 107, 244, 91, 81,
-  224, 29, 18, 183, 100, 104, 101, 122, 224, 69, 12,
-  159, 76, 79, 239, 37, 114, 157, 44, 32, 76, 110,
-  215, 249, 138, 36, 82, 101, 126, 154, 80
-]
+
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -88,10 +82,10 @@ async function loadKeypairFromPrivateKey(privateKeyHex) {
   const secretKey = Buffer.from(privateKeyHex, 'hex');
 
   //These lines are used for loading dummywallet during development
-  const dummyPrivateKey = Buffer.from(dummyKeypair).toString('hex');
-  const secretKey2 = Buffer.from(dummyPrivateKey, 'hex');
+  //const dummyPrivateKey = Buffer.from(dummyKeypair).toString('hex');
+  //const secretKey2 = Buffer.from(dummyPrivateKey, 'hex');
 
-  return Keypair.fromSecretKey(secretKey2);
+  return Keypair.fromSecretKey(secretKey);
 }
 
 async function getUserKeypair(username) {
@@ -212,19 +206,54 @@ export function startBot() {
 
     // Create proposal command handler (with parameters)
     async "create-proposal"(ctx) {
+
+      const username = ctx.from.username;
+      const keypair = await getUserKeypair(username);
+
+      if (!keypair) {
+        return ctx.reply("You don't have a wallet yet. Create one using /create-account");
+      }
+
+      console.log("create-proposal", username)
+
       if (ctx.match) {
         const message = ctx.match;
         const proposalJSON = await analyzeProposal(message);
         const tx = await createProposal(
+          keypair,
           proposalJSON.title,
           proposalJSON.description,
-          proposalJSON.deadline
+          proposalJSON.deadline,
+          proposalJSON.DAOaddress
         );
         return ctx.reply(`DAO create proposal: ${tx}`);
       } else {
         return ctx.reply("Please use the command: /create-proposal [details]");
       }
     },
+
+    // Create proposal command handler (with parameters)
+    async "register-member"(ctx) {
+
+      const username = ctx.from.username;
+      const keypair = await getUserKeypair(username);
+
+      if (!keypair) {
+        return ctx.reply("You don't have a wallet yet. Create one using /create-account");
+      }
+
+      console.log("register-member", username)
+
+      if (username) {
+        const message = ctx.match;
+        const tx = await registerMember(keypair, message, username);
+        return ctx.reply(`Member Registered: ${tx}`);
+      } else {
+        return ctx.reply("Please use the command: /create-proposal [details]");
+      }
+    },
+
+
 
     // Pause DAO command handler
     async "pause-dao"(ctx) {
@@ -307,15 +336,16 @@ export function startBot() {
     // First send welcome message with inline keyboard
     await ctx.reply(
       "Welcome to the Nestfolio Bot! You can use the buttons below or these commands:\n\n" +
-      "/create-dao [explain] - Initialize a new DAO with name and registration fee\n" +
-      "/create-proposal [explain] - Create a new proposal with title, description and deadline\n" +
-      "/pause-dao - Emergency pause of DAO operations\n" +
-      "/resume-dao - Resume DAO operations after pause\n" +
+      "/createDAO [explain] - Initialize a new DAO with name and registration fee\n" +
+      "/createProposal [explain] - Create a new proposal with title, description and deadline\n" +
+      "/pauseDAO - Emergency pause of DAO operations\n" +
+      "/resumeDAO - Resume DAO operations after pause\n" +
       "/deposit - Get address to deposit funds\n" +
+      "/registerMember - to register to a DAO\n" +
       "/withdraw - Withdraw funds from the DAO\n" +
       "/airdrop - Trigger token airdrop\n" +
       "/balance - Check current DAO balance\n" +
-      "/create-account - Create a new Solana wallet\n\n" +
+      "/createAccount - Create a new Solana wallet\n\n" +
       "To get started, try creating a DAO with /create-dao [name] [fee]",
       {
         reply_markup: mainInlineKeyboard
@@ -357,6 +387,7 @@ export function startBot() {
   bot.command("resumeDAO", (ctx) => commandHandlers["resume-dao"](ctx));
   bot.command("DAOpause", (ctx) => commandHandlers["pause-dao"](ctx));
   bot.command("DAOresume", (ctx) => commandHandlers["resume-dao"](ctx));
+  bot.command("registerMember", (ctx) => commandHandlers["register-member"](ctx));
 
   bot.catch((err) => {
     const ctx = err.ctx;

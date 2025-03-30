@@ -7,8 +7,10 @@ import {
   sendAndConfirmTransaction,
   Connection,
   LAMPORTS_PER_SOL,
-  Keypair
+  Keypair,
 } from "@solana/web3.js";
+
+import { getAccount, getAssociatedTokenAddress } from "@solana/spl-token";
 import { BN } from "bn.js";
 
 import { readFileSync } from 'fs';
@@ -31,10 +33,11 @@ const DAO_PROGRAM_ID = new PublicKey(
 // Connection setup
 const local = "http://127.0.0.1:8899";
 const devnet = "https://api.devnet.solana.com";
-const connection = new Connection(local);
+const connection = new Connection(devnet);
 
 
-// Helper to create a provider with the given keypair
+// Helper to treasuryAddresscreate a provider with the given keypair
+//
 function createProvider(wallet) {
   //const wallet = new anchor.Wallet(keypair);
   return new anchor.AnchorProvider(connection, wallet, {
@@ -272,7 +275,7 @@ export async function createProposal(secretKeyStr, title, description, expiryTim
         Buffer.from("proposal"),
         wallet.publicKey.toBuffer(),
         daoAddress.toBuffer(),
-        Buffer.from("Buy a new laptop"),
+        Buffer.from(title),
       ],
       DAO_PROGRAM_ID
     );
@@ -285,16 +288,17 @@ export async function createProposal(secretKeyStr, title, description, expiryTim
         new BN(expiryTime)
       )
       .accounts({
-        proposer: wallet.publicKey,
+        proposer: wallet.publicKey.toString(),
         organization: daoAddress,
         proposal: proposalAddress,
         systemProgram: anchor.web3.SystemProgram.programId,
       })
       .rpc();
 
-    const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
-    console.log("Proposal created successfully:", proposal);
+    // const proposal = await daoProgram.account.proposal.fetch(proposalAddress);
+    //console.log("Proposal created successfully:", proposal);
 
+    console.log("proposalAddress", proposalAddress, "daoAddress", daoAddress)
     return proposalAddress;
 
     //const daoAccountInfo = await connection.getAccountInfo(daoAddress);
@@ -452,7 +456,7 @@ export async function getBalance(secretKeyStr) {
     const balance = await provider.connection.getBalance(wallet.publicKey);
     const balanceInSol = Number(balance) / anchor.web3.LAMPORTS_PER_SOL;
 
-    return `Balance: ${balanceInSol} SOL`;
+    return `Balance: ${balanceInSol} SOL \n PublicKey: ${wallet.publicKey}`;
   } catch (err) {
     console.error("Error:", err.message);
     console.error("Stack:", err.stack);
@@ -607,11 +611,20 @@ export async function withdrawFund(keypair, amount) {
   }
 }
 
-export async function registerMember(params) {
-  const [daoAddress] = PublicKey.findProgramAddressSync(
-    [Buffer.from("organization"), creator.toBuffer()],
-    DAO_PROGRAM_ID
-  );
+export async function registerMember(secretKeyStr, DAOAddress, username) {
+
+  const wallet = new anchor.Wallet(secretKeyStr);
+  const provider = createProvider(wallet);
+  anchor.setProvider(provider);
+  const daoProgram = new anchor.Program(IDL, provider);
+
+
+  //const [daoAddress] = PublicKey.findProgramAddressSync(
+  //  [Buffer.from("organization"), wallet.publicKey.toBuffer()],
+  //  DAO_PROGRAM_ID
+  //);
+
+  const daoAddress = new PublicKey(DAOAddress)
 
   const [memberAddress] = PublicKey.findProgramAddressSync(
     [Buffer.from("member"), daoAddress.toBuffer()],
@@ -623,14 +636,16 @@ export async function registerMember(params) {
     DAO_PROGRAM_ID
   );
 
+  console.log("memberNftMint", memberNftMint)
+
   const memberNftTokenAccount = await getAssociatedTokenAddress(
     memberNftMint,
-    creator
+    wallet.publicKey
   );
 
   console.log("member", memberAddress);
   await daoProgram.methods
-    .initializeMember("Avhi")
+    .initializeMember(username)
     .accounts({
       organization: daoAddress,
       member: memberAddress,
@@ -644,9 +659,6 @@ export async function registerMember(params) {
   );
   console.log(member_data);
 
-  const tokenAccount = await getAccount(
-    provider.connection,
-    memberNftTokenAccount
-  );
-
+  return `Member registered successfully. \n Member Address: ${memberAddress}`;
 }
+
