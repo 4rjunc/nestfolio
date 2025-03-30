@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/nestfolio.json`.
  */
 export type Nestfolio = {
-  "address": "FXvTKSj5SXeRvaKqGxVc97pekvqN77btHBoZ4Qsn9iZX",
+  "address": "DsuyobFDVzaNeQjwLvxSL2efU7eX6W1nBHZQv5Y7dB6E",
   "metadata": {
     "name": "nestfolio",
     "version": "0.1.0",
@@ -65,7 +65,8 @@ export type Nestfolio = {
           }
         },
         {
-          "name": "organization"
+          "name": "organization",
+          "writable": true
         },
         {
           "name": "systemProgram",
@@ -106,11 +107,14 @@ export type Nestfolio = {
           "signer": true
         },
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         },
         {
-          "name": "treasury",
+          "name": "treasuryPda",
+          "docs": [
+            "CHECK"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
@@ -129,7 +133,7 @@ export type Nestfolio = {
               },
               {
                 "kind": "account",
-                "path": "organisation"
+                "path": "organization"
               }
             ]
           }
@@ -143,6 +147,10 @@ export type Nestfolio = {
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "bump",
+          "type": "u8"
         }
       ]
     },
@@ -160,7 +168,7 @@ export type Nestfolio = {
       ],
       "accounts": [
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         }
       ],
@@ -371,7 +379,7 @@ export type Nestfolio = {
           "signer": true
         },
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true,
           "pda": {
             "seeds": [
@@ -416,6 +424,73 @@ export type Nestfolio = {
       ]
     },
     {
+      "name": "listProposal",
+      "discriminator": [
+        134,
+        224,
+        243,
+        174,
+        42,
+        55,
+        4,
+        7
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "signer": true
+        },
+        {
+          "name": "organization",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  111,
+                  114,
+                  103,
+                  97,
+                  110,
+                  105,
+                  122,
+                  97,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "organization"
+              }
+            ]
+          },
+          "relations": [
+            "proposal"
+          ]
+        },
+        {
+          "name": "proposal"
+        }
+      ],
+      "args": [
+        {
+          "name": "title",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        },
+        {
+          "name": "expiryTime",
+          "type": "i64"
+        }
+      ]
+    },
+    {
       "name": "resumeOperations",
       "discriminator": [
         240,
@@ -429,7 +504,7 @@ export type Nestfolio = {
       ],
       "accounts": [
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         }
       ],
@@ -449,7 +524,7 @@ export type Nestfolio = {
       ],
       "accounts": [
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         }
       ],
@@ -635,16 +710,20 @@ export type Nestfolio = {
       ],
       "accounts": [
         {
-          "name": "member",
+          "name": "signer",
           "writable": true,
           "signer": true
         },
         {
-          "name": "organisation",
+          "name": "organization",
           "writable": true
         },
         {
-          "name": "treasury",
+          "name": "treasuryPda",
+          "docs": [
+            "CHECK"
+          ],
+          "writable": true,
           "pda": {
             "seeds": [
               {
@@ -662,7 +741,7 @@ export type Nestfolio = {
               },
               {
                 "kind": "account",
-                "path": "organisation"
+                "path": "organization"
               }
             ]
           }
@@ -676,6 +755,10 @@ export type Nestfolio = {
         {
           "name": "amount",
           "type": "u64"
+        },
+        {
+          "name": "bump",
+          "type": "u8"
         }
       ]
     }
@@ -718,19 +801,6 @@ export type Nestfolio = {
         136,
         53,
         33
-      ]
-    },
-    {
-      "name": "treasury",
-      "discriminator": [
-        238,
-        239,
-        123,
-        238,
-        89,
-        1,
-        168,
-        253
       ]
     }
   ],
@@ -839,6 +909,26 @@ export type Nestfolio = {
       "code": 6020,
       "name": "votingNotAllowed",
       "msg": "VotingNotAllowed: The user is not allowed to vote on this proposal."
+    },
+    {
+      "code": 6021,
+      "name": "memberNotActive",
+      "msg": "MemberNotActive: The user is not active."
+    },
+    {
+      "code": 6022,
+      "name": "cannotDelegateToSelf",
+      "msg": "Cannot delegate vote to self."
+    },
+    {
+      "code": 6023,
+      "name": "alreadyDelegated",
+      "msg": "Vote has already been delegated."
+    },
+    {
+      "code": 6024,
+      "name": "invalidOrganization",
+      "msg": "Member does not belong to this organization."
     }
   ],
   "types": [
@@ -870,6 +960,16 @@ export type Nestfolio = {
           {
             "name": "memberBump",
             "type": "u8"
+          },
+          {
+            "name": "delegate",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "isActive",
+            "type": "bool"
           }
         ]
       }
@@ -930,6 +1030,16 @@ export type Nestfolio = {
           {
             "name": "unlockTimestamp",
             "type": "i64"
+          },
+          {
+            "name": "proposalList",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "treasuryPda",
+            "type": "pubkey"
           }
         ]
       }
@@ -995,26 +1105,6 @@ export type Nestfolio = {
           },
           {
             "name": "rejected"
-          }
-        ]
-      }
-    },
-    {
-      "name": "treasury",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "amount",
-            "type": "u64"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          },
-          {
-            "name": "admin",
-            "type": "pubkey"
           }
         ]
       }

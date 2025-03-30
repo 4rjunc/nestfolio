@@ -1,6 +1,8 @@
 // 1. Streamline command handlers : DONE 80%
 // 2. Add supabase to store the wallet keys : telegram username , So when a user starts to interact with the Nestfolio bot. The wallet linked to the user name will be loaded and used for actions
-// Rewrite the client code, since the code rn is shit and unable to understand. 
+// 2.1 DAO - Create Wallet✅, Create DAO✅ (Store DAO data in DB ❌), pause-dao ✅. resume-dao ✅
+// 2.2 User - Create Wallet✅, Register as Member on a DAO, Create Proposal 
+// 3.Rewrite the client code, since the code rn is shit and unable to understand. 
 
 import { Bot, GrammyError, HttpError } from "grammy";
 import { InlineKeyboard, Keyboard } from "grammy";
@@ -19,10 +21,37 @@ import {
 } from "./program.js";
 import { analyzeDAOInit, analyzeProposal } from "./prompt.js";
 
+
+const dummyKeypair = [
+  133, 1, 245, 20, 13, 87, 206, 247, 177, 252, 67,
+  139, 23, 163, 97, 83, 233, 148, 234, 93, 137, 83,
+  191, 68, 99, 197, 162, 202, 210, 107, 244, 91, 81,
+  224, 29, 18, 183, 100, 104, 101, 122, 224, 69, 12,
+  159, 76, 79, 239, 37, 114, 157, 44, 32, 76, 110,
+  215, 249, 138, 36, 82, 101, 126, 154, 80
+]
+
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function saveDAODetails(username, daoName, daoAddress, registrationFee) {
+  const { data, error } = await supabase
+    .from('nestfolio-dao')
+    .insert({
+      dao_name: daoName,
+      dao_address: daoAddress,
+      registration_fee: registrationFee,
+      telegram_username: username
+    });
+
+  if (error) {
+    console.error('Failed to save DAO details:', error);
+    throw new Error(`Failed to save DAO: ${error.message}`);
+  }
+  return data;
+}
 
 // Helper functions for wallet management
 async function saveWallet(username, publicKey, privateKey) {
@@ -57,7 +86,12 @@ async function getWallet(username) {
 
 async function loadKeypairFromPrivateKey(privateKeyHex) {
   const secretKey = Buffer.from(privateKeyHex, 'hex');
-  return Keypair.fromSecretKey(secretKey);
+
+  //These lines are used for loading dummywallet during development
+  const dummyPrivateKey = Buffer.from(dummyKeypair).toString('hex');
+  const secretKey2 = Buffer.from(dummyPrivateKey, 'hex');
+
+  return Keypair.fromSecretKey(secretKey2);
 }
 
 async function getUserKeypair(username) {
@@ -76,13 +110,12 @@ export function startBot() {
     // Balance command handler
     async balance(ctx) {
       const username = ctx.from.username;
-      const keypair = await getUserKeypair(username);
+      const secretKeyStr = await getUserKeypair(username);
 
-      if (!keypair) {
+      if (!secretKeyStr) {
         return ctx.reply("You don't have a wallet yet. Create one using /create-account");
       }
-
-      const result = await getBalance(keypair);
+      const result = await getBalance(secretKeyStr);
       return ctx.reply(`${result}`);
     },
 
@@ -153,22 +186,30 @@ export function startBot() {
         return ctx.reply("You don't have a wallet yet. Create one using /create-account");
       }
 
-      const dummyKeypair = "2RV4rBmkuF91QtEiJttMVBkZdYQbqzakMUzunxCsvn3p3Esae78fXD7DebsRtKaVDLa1fzWocFjJzHLarQ3yi6ge"
 
       if (ctx.match) {
         const daoInitMsg = ctx.match;
         const daoInitJSON = await analyzeDAOInit(daoInitMsg);
         const daoAddress = await initDAO(
-          dummyKeypair,
-          //keypair,
+          keypair,
           daoInitJSON.daoName,
           daoInitJSON.registrationFee
         );
+
+        // Save DAO details to Supabase
+        //await saveDAODetails(
+        //  username,
+        //  daoInitJSON.daoName,
+        //  daoAddress,
+        //  daoInitJSON.registrationFee
+        //);
+
         return ctx.reply(`DAO initialized at address: ${daoAddress}`);
       } else {
         return ctx.reply("Please use the command: /create-dao [name] [fee]");
       }
     },
+
     // Create proposal command handler (with parameters)
     async "create-proposal"(ctx) {
       if (ctx.match) {
@@ -187,13 +228,29 @@ export function startBot() {
 
     // Pause DAO command handler
     async "pause-dao"(ctx) {
-      const tx = await emergencyPause();
+      const username = ctx.from.username;
+      const secretKeystr = await getUserKeypair(username);
+
+      if (!secretKeystr) {
+        return ctx.reply("You don't have a wallet yet. Create one using /create-account");
+      }
+
+      const tx = await emergencyPause(secretKeystr);
       return ctx.reply(`DAO emergency pause: ${tx}`);
     },
 
     // Resume DAO command handler
     async "resume-dao"(ctx) {
-      const tx = await resumeOperations();
+      const username = ctx.from.username;
+      const secretKeystr = await getUserKeypair(username);
+
+      if (!secretKeystr) {
+        return ctx.reply("You don't have a wallet yet. Create one using /create-account");
+      }
+
+      console.log("resume-dao, username", username)
+
+      const tx = await resumeOperations(secretKeystr);
       return ctx.reply(`DAO operations resumed: ${tx}`);
     },
 
@@ -250,8 +307,8 @@ export function startBot() {
     // First send welcome message with inline keyboard
     await ctx.reply(
       "Welcome to the Nestfolio Bot! You can use the buttons below or these commands:\n\n" +
-      "/create-dao [parameters] - Initialize a new DAO with name and registration fee\n" +
-      "/create-proposal [details] - Create a new proposal with title, description and deadline\n" +
+      "/create-dao [explain] - Initialize a new DAO with name and registration fee\n" +
+      "/create-proposal [explain] - Create a new proposal with title, description and deadline\n" +
       "/pause-dao - Emergency pause of DAO operations\n" +
       "/resume-dao - Resume DAO operations after pause\n" +
       "/deposit - Get address to deposit funds\n" +
