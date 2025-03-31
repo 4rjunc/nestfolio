@@ -134,16 +134,23 @@ export function startBot() {
 
       // Save to Supabase
       await saveWallet(username, publicKey, privateKey);
-
       return ctx.reply(
         `🔑 New Solana Wallet Created and Linked to Your Account!\n\n` +
         `📬 Public Address: ${publicKey}\n\n` +
-        //`🔐 Private Key: ${privateKey}\n\n` +
-        //`⚠️ IMPORTANT: Save your private key securely and never share it with anyone!`,
+        `Fund you wallet with some SOL!`,
         {
           reply_markup: mainKeyboard
         }
-      );
+      )
+      //return ctx.reply(
+      //  `🔑 New Solana Wallet Created and Linked to Your Account!\n\n` +
+      //  `📬 Public Address: ${publicKey}\n\n` +
+      //  //`🔐 Private Key: ${privateKey}\n\n` +
+      //  //`⚠️ IMPORTANT: Save your private key securely and never share it with anyone!`,
+      //  {
+      //    reply_markup: mainKeyboard
+      //  }
+      //);
     },
 
     // Deposit command handler
