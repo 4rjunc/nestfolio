@@ -23,8 +23,6 @@ import {
 import { analyzeDAOInit, analyzeProposal } from "./prompt.js";
 
 
-
-
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
@@ -300,7 +298,7 @@ export function startBot() {
     "📝 Create Proposal": "create-proposal",
     "⏸️ Pause DAO": "pause-dao",
     "▶️ Resume DAO": "resume-dao",
-    "🪂 Airdrop": "airdrop"
+    //"🪂 Airdrop": "airdrop"
   };
 
   // Create inline keyboard for message buttons
@@ -316,8 +314,8 @@ export function startBot() {
     .row()
     .text("⏸️ Pause DAO", "pause-dao")
     .text("▶️ Resume DAO", "resume-dao")
-    .row()
-    .text("🪂 Airdrop", "airdrop");
+  //.row()
+  //.text("🪂 Airdrop", "airdrop");
 
   // Create regular keyboard for main reply keyboard
   const mainKeyboard = new Keyboard()
@@ -328,26 +326,30 @@ export function startBot() {
     .text("⏸️ Pause DAO")
     .text("▶️ Resume DAO")
     .row()
-    .text("🪂 Airdrop")
+    //.text("🪂 Airdrop")
     .resized();
 
   // Start command with both inline and reply keyboards
   bot.command("start", async (ctx) => {
     // First send welcome message with inline keyboard
     await ctx.reply(
-      "Welcome to the Nestfolio Bot! You can use the buttons below or these commands:\n\n" +
-      "/createDAO [explain] - Initialize a new DAO with name and registration fee\n" +
-      "/createProposal [explain] - Create a new proposal with title, description and deadline\n" +
-      "/pauseDAO - Emergency pause of DAO operations\n" +
-      "/resumeDAO - Resume DAO operations after pause\n" +
-      "/deposit - Get address to deposit funds\n" +
-      "/registerMember - to register to a DAO\n" +
-      "/withdraw - Withdraw funds from the DAO\n" +
-      "/airdrop - Trigger token airdrop\n" +
-      "/balance - Check current DAO balance\n" +
-      "/createAccount - Create a new Solana wallet\n\n" +
-      "To get started, try creating a DAO with /create-dao [name] [fee]",
+      "🚀 *Welcome to Nestfolio!* 🚀\n\n" +
+      "Your gateway to creating and managing DAOs on Solana.\n\n" +
+      "🔹 *Available Commands:*\n\n" +
+      "🏛️ */createDAO* - Launch your own DAO with custom name and fee\n" +
+      "📝 */createProposal* - Submit new ideas to your community\n" +
+      "⏸️ */pauseDAO* - Emergency pause all DAO operations\n" +
+      "▶️ */resumeDAO* - Resume DAO functionality\n" +
+      "💰 */deposit* - Fund your DAO treasury\n" +
+      "🤝 */registerMember* - Join an existing DAO\n" +
+      "💸 */withdraw* - Take funds from the treasury\n" +
+      //"🪂 */airdrop* - Distribute tokens to members\n" +
+      "💼 */balance* - Check current treasury balance\n" +
+      "🔑 */createAccount* - Generate a new Solana wallet\n\n" +
+      "✨ *Get started by creating your first DAO:*\n" +
+      "*/createDAO [name] [fee]*",
       {
+        parse_mode: "Markdown",
         reply_markup: mainInlineKeyboard
       }
     );
